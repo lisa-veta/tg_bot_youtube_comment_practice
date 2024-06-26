@@ -61,7 +61,7 @@ class OllamaChat:
         with open("q_group_name.txt", 'r', encoding='utf-8') as file:
             base_prompt = file.read()
 
-        prompt = "\n".join(characteristics) + "\n" + base_prompt
+        prompt = base_prompt + "\n".join(characteristics) + "\n"
         response_text = self.get_response_from_model(prompt)
         json_start = response_text.find("{")
         json_end = response_text.find("}")

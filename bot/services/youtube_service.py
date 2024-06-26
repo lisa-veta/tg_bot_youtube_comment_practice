@@ -2,7 +2,6 @@
 from googleapiclient.discovery import build
 import requests
 
-
 class YoutubeParser:
     def __init__(self):
         self.YT_api_key = 'AIzaSyCGros2SeZwb4utjrTfL2Hcbuc2kx4FxJI'
