@@ -1,9 +1,12 @@
 # -*- coding: utf-8 -*-
+#класс для разбиения характеристик на группы
 import torch
 from transformers import AutoTokenizer, AutoModel
 from sklearn.cluster import KMeans
 from sentiment_analysis import OllamaChat
 import json
+import plotly.express as px
+from sklearn.decomposition import PCA
 
 class CharacteristicClusterer:
     def __init__(self):
@@ -36,3 +39,28 @@ class CharacteristicClusterer:
         return {
             "groups": groups
         }
+
+    def plot_characteristics(self, groups):
+        data = []
+        all_embeddings = [self.get_embedding(char['characteristic']) for group in groups for char in
+                          group['characteristics']]
+        pca = PCA(n_components=2)
+        vectors_2d = pca.fit_transform(all_embeddings)
+
+        index = 0
+        for i, group in enumerate(groups):
+            for j, characteristic in enumerate(group['characteristics']):
+                data.append({
+                    'x': vectors_2d[index][0],
+                    'y': vectors_2d[index][1],
+                    'size': characteristic['countOfPositiveComments'] + characteristic['countOfNegativeComments'] +
+                            characteristic['countOfNeutralComments'],
+                    'color': i,
+                    'text': characteristic['characteristic']
+                })
+                index += 1
+
+        fig = px.scatter(data, x='x', y='y', size='size', color='color',
+                         hover_name='text', size_max=60)
+        fig.update_traces(marker=dict(line=dict(width=2, color='DarkSlateGrey')))
+        fig.show()
