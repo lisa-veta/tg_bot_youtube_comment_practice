@@ -16,7 +16,7 @@ class Role(Base):
 
 class User(Base):
     __tablename__ = "users"
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[int] = mapped_column(BIGINT, primary_key=True)
     role_id: Mapped[int] = mapped_column(ForeignKey("roles.id"))
     username: Mapped[str] = mapped_column(String(30), nullable=False)
     token_balance: Mapped[int] = mapped_column(default=5)
