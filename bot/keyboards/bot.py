@@ -7,12 +7,24 @@ import hashlib
 token = '6672835844:AAH204zBLHfaGJKJvsWuSiHQpXgTTKLfKZo'
 bot = tg.TeleBot(token)
 unnown_u = []
-
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
     user_id_f = message.from_user.id
-    user_id = 1 #потом уберу, когда будет база данных с пользователями
+    user_id = 2 #потом уберу, когда будет база данных с пользователями
     user_name = message.from_user.username
+    keyboard = types.ReplyKeyboardMarkup(row_width=4, resize_keyboard=True)
+    b_history = types.KeyboardButton('История\U0001F4D6')
+    b_favorite = types.KeyboardButton('Избранное\U00002763')
+    b_account = types.KeyboardButton('Аккаунт\U0001F921')
+    b_help = types.KeyboardButton('Навигация\U0001F5FA')
+    keyboard.add(b_account, b_history, b_favorite, b_help)
+
+    keyboard_admin = types.ReplyKeyboardMarkup(row_width=3, resize_keyboard=True)
+    b_users_m = types.KeyboardButton('Управление пользователями\U0001F465')
+    b_database = types.KeyboardButton('Статистика БД\U0001F418\U0001F4CA')
+    b_token = types.KeyboardButton('Выдать токены\U0001F4B8')
+    b_swap_role = types.KeyboardButton('Выйти из режима администрирования\U0001F6AA')
+    keyboard_admin.add(b_users_m, b_database, b_token, b_swap_role)
     if user_id == 0:
         m = f'Здравствуйте {user_name}, вы впервые пользуетесь ботом.'
         bot.send_message(message.chat.id, text=m)
@@ -23,77 +35,97 @@ def send_welcome(message):
 
     elif user_id == 1:
         m = f'Здравствуйте {user_name}, с возвращением!.'
-        keyboard = types.ReplyKeyboardMarkup(row_width=4, resize_keyboard=True)
-        b_history = types.KeyboardButton('История\U0001F4D6')
-        b_favorite = types.KeyboardButton('Избранное\U00002763')
-        b_account = types.KeyboardButton('Аккаунт\U0001F921')
-        b_help = types.KeyboardButton('Навигация\U0001F5FA')
-        keyboard.add(b_account, b_history, b_favorite, b_help)
         bot.send_message(message.chat.id, text=m, reply_markup=keyboard)
 
-        @bot.message_handler(func=lambda message: True)
-        def handle_button(message):
-            match message.text:
-                case 'История\U0001F4D6':
-                    history = get_last_20_by_user(message.from_user.id)
-                    keys = []
-                    values = []
-                    result = "Последние 20 видео, запрашиваемые вами:\n"
-                    i = 1
-                    for message_id, video_id, request_date in history:
-                        keys.append('/' + str(i))
-                        values.append(message_id)
-                        result += f"/{i} {video_id} от {request_date}\n"
-                        i += 1
-                    bot.send_message(message.chat.id, text=result)
-                    global dict_com
-                    dict_com = dict(zip(keys, values))
+
+    elif user_id == 2:
+        m = f'Здравствуйте {user_name}, с возвращением!.'
+        bot.send_message(message.chat.id, text=m, reply_markup=keyboard_admin)
+    @bot.message_handler(func=lambda message: True)
+    def handle_button(message):
+        match message.text:
+            case 'Управление пользователями\U0001F465':
+                k_users = types.InlineKeyboardMarkup(row_width=1)
+                b_new_users = types.InlineKeyboardButton(text='Статистика по новым пользователям', callback_data='new_users_state')
+                b_view_users = types.InlineKeyboardButton(text='Просмотр пользователей', callback_data='view_users_state')
+                k_users.add(b_new_users, b_view_users)
+                bot.send_message(message.chat.id, text='Список новых пользователей', reply_markup=k_users)
+            case 'Статистика БД\U0001F418\U0001F4CA':
+                pass
+            case 'Выдать токены\U0001F4B8':
+                pass
+            case 'Выйти из режима администрирования\U0001F6AA':
+                keyboard_admin_user = types.ReplyKeyboardMarkup(row_width=4, resize_keyboard=True)
+                b_history = types.KeyboardButton('История\U0001F4D6')
+                b_favorite = types.KeyboardButton('Избранное\U00002763')
+                b_account = types.KeyboardButton('Аккаунт\U0001F921')
+                b_help = types.KeyboardButton('Навигация\U0001F5FA')
+                b_admin = types.KeyboardButton(text = 'Войти в режим администрирования\U0001F6AA')
+                keyboard_admin_user.add(b_account, b_history, b_favorite, b_help, b_admin)
+                bot.send_message(message.chat.id, text = 'Вы вошли как пользователь', reply_markup=keyboard_admin_user)
+
+            case 'Войти в режим администрирования\U0001F6AA':
+                bot.send_message(message.chat.id, text='Вы вошли как администратор', reply_markup=keyboard_admin)
+
+            case 'История\U0001F4D6':
+                history = get_last_20_by_user(message.from_user.id)
+                keys = []
+                values = []
+                result = "Последние 20 видео, запрашиваемые вами:\n"
+                i = 1
+                for message_id, video_id, request_date in history:
+                    keys.append('/' + str(i))
+                    values.append(message_id)
+                    result += f"/{i} {video_id} от {request_date}\n"
+                    i += 1
+                bot.send_message(message.chat.id, text=result)
+                global dict_com
+                dict_com = dict(zip(keys, values))
 
 
-                case 'Избранное\U00002763':
-                    # в дальнейшем будет подтягиваться из функции
-                    if is_file_empty() != True and len(get_favorite_video_ids(message.from_user.id)) != 0:
-                        fav = create_list_of_button(get_favorite_video_ids(message.from_user.id))
-                        bot.send_message(chat_id=message.chat.id, text='Вы добавили в избранное следующие видео:', reply_markup=fav)
-                    else:
-                        bot.send_message(chat_id=message.chat.id, text='Вы еще не добавили ни одного видео в избранное.')
-                case 'Аккаунт\U0001F921':
-                    bot.send_message(chat_id=message.chat.id, text="Вы нажали на Кнопку 1!")
-                case 'Навигация\U0001F5FA':
-                    bot.send_message(chat_id=message.chat.id, text="Вы нажали на Кнопку 1!")
-                case _:
-                    youtube_link_pattern = r'https?://(?:www\.)?youtube\.com/watch\?v=\w+'
-                    if re.search(youtube_link_pattern, message.text):
-                        tconv = lambda x: time.strftime("%H:%M:%S %d.%m.%Y", time.localtime(x))
-                        m_date = tconv(message.date)
-                        m_user_id = message.from_user.id
-                        m_id = message.message_id
-                        link = handle_youtube_link(message)
-                        write_to_file(m_id, m_user_id, link, m_date)
-                        m_queue = bot.send_message(chat_id=message.chat.id, text='Ваш запрос в очереди')
-                        #тут должна быть очередь
-                        time.sleep(5)
-                        #должно подтягиваться из БД
-                        # data = get_data()
-                        # message_text = data[0]
-                        #message_video_info = data[1]
-                        text = 'Название видео, дата публикации, кол-во просмотров, кол-во лайков'
+            case 'Избранное\U00002763':
+                # в дальнейшем будет подтягиваться из функции
+                if is_file_empty() != True and len(get_favorite_video_ids(message.from_user.id)) != 0:
+                    fav = create_list_of_button(get_favorite_video_ids(message.from_user.id))
+                    bot.send_message(chat_id=message.chat.id, text='Вы добавили в избранное следующие видео:', reply_markup=fav)
+                else:
+                    bot.send_message(chat_id=message.chat.id, text='Вы еще не добавили ни одного видео в избранное.')
+            case 'Аккаунт\U0001F921':
+                bot.send_message(chat_id=message.chat.id, text="Вы нажали на Кнопку 1!")
+            case 'Навигация\U0001F5FA':
+                bot.send_message(chat_id=message.chat.id, text="Вы нажали на Кнопку 1!")
+            case _:
+                youtube_link_pattern = r'https?://(?:www\.)?youtube\.com/watch\?v=\w+'
+                if re.search(youtube_link_pattern, message.text):
+                    tconv = lambda x: time.strftime("%H:%M:%S %d.%m.%Y", time.localtime(x))
+                    m_date = tconv(message.date)
+                    m_user_id = message.from_user.id
+                    m_id = message.message_id
+                    link = handle_youtube_link(message)
+                    write_to_file(m_id, m_user_id, link, m_date)
+                    m_queue = bot.send_message(chat_id=message.chat.id, text='Ваш запрос в очереди')
+                    #тут должна быть очередь
+                    time.sleep(5)
+                    #должно подтягиваться из БД
+                    # data = get_data()
+                    # message_text = data[0]
+                    #message_video_info = data[1]
+                    text = 'Название видео, дата публикации, кол-во просмотров, кол-во лайков'
 
-                        video_info = types.InlineKeyboardMarkup(row_width=1)
-                        show_video_info = types.InlineKeyboardButton(text='Запросить анализ видео', callback_data='show_video_info')
-                        add_favourite = types.InlineKeyboardButton(text='Добавить видео в избранное', callback_data='add_favourite')
-                        video_info.add(show_video_info, add_favourite)
-                        bot.edit_message_text(chat_id=message.chat.id, message_id=m_queue.message_id, text=text, reply_markup=video_info)
+                    video_info = types.InlineKeyboardMarkup(row_width=1)
+                    show_video_info = types.InlineKeyboardButton(text='Запросить анализ видео', callback_data='show_video_info')
+                    add_favourite = types.InlineKeyboardButton(text='Добавить видео в избранное', callback_data='add_favourite')
+                    video_info.add(show_video_info, add_favourite)
+                    bot.edit_message_text(chat_id=message.chat.id, message_id=m_queue.message_id, text=text, reply_markup=video_info)
 
-                    elif message.text in dict_com.keys():
-                        bot.forward_message(message.chat.id, message.chat.id, dict_com[message.text])
-                    else:
-                        bot.send_message(chat_id=message.chat.id,
-                                         text='Я вас не понял.\nВы можете посмортеть свои возможности, нажав кнопку Навигации')
-
-
+                elif message.text in dict_com.keys():
+                    bot.forward_message(message.chat.id, message.chat.id, dict_com[message.text])
+                else:
+                    bot.send_message(chat_id=message.chat.id,
+                                     text='Я вас не понял.\nВы можете посмортеть свои возможности, нажав кнопку Навигации')
     @bot.callback_query_handler(func=lambda call: True)
     def callback(call):
+
         t_id = message.chat.id
         num_b = 0
         if str(call.data)[-1] in '12345':
@@ -150,7 +182,18 @@ def send_welcome(message):
             pass
         elif bool(re.fullmatch(r'hisrory[1-20]', call.data)):
                 pass
-
+        elif call.data == 'view_users_state':
+            pass
+        elif call.data == 'new_users_state':
+            date_keyboard = types.InlineKeyboardMarkup(row_width=1)
+            b_day = types.InlineKeyboardButton(text='День', callback_data='day')
+            b_week = types.InlineKeyboardButton(text='День', callback_data='week')
+            b_month = types.InlineKeyboardButton(text='День', callback_data='month')
+            b_back = types.InlineKeyboardButton(text='<<Назад', callback_data='back')
+            date_keyboard.add(b_day, b_month, b_month, b_back)
+            bot.edit_message_text(chat_id=t_id, message_id=call.message.message_id,
+                                  text='Выберите период за который вывести статистику',
+                                  reply_markup=date_keyboard)
 
 def get_last_20_by_user(user_id):
     try:
