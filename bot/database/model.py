@@ -48,33 +48,35 @@ class Request(Base):
     datetime: Mapped[DateTime] = mapped_column(TIMESTAMP, server_default=func.now())
     video_information: Mapped[str] = mapped_column(JSONB, nullable=False)
     message_id: Mapped[int] = mapped_column()
+    characteristics: Mapped[str] = mapped_column(JSONB, nullable=True)
+    summary: Mapped[str] = mapped_column(TEXT, nullable=True)
 
     def __repr__(self) -> str:
         return f"Request(id={self.id}, user_id={self.user_id}, " \
                f"video_url={self.video_url}, is_favourite={self.is_favourite}, " \
                f"datetime={self.datetime}, video_information={self.video_information}, message_id={self.message_id})"
 
-class Characteristics(Base):
-    __tablename__ = "characteristics"
+# class Data(Base):
+#     __tablename__ = "data"
+#
+#     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+#     request_id: Mapped[int] = mapped_column(ForeignKey("requests.id"), unique=True)
+#     characteristics: Mapped[str] = mapped_column(JSONB, nullable=True)
+#     summary: Mapped[str] = mapped_column(TEXT, nullable=True)
+#
+#     def  __repr__(self) -> str:
+#         return f"Characteristics(request_id={self.request_id}, is_paid={self.is_paid}, data={self.data})"
 
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    request_id: Mapped[int] = mapped_column(ForeignKey("requests.id"), unique=True)
-    data: Mapped[str] = mapped_column(JSONB, nullable=True)
-    is_paid: Mapped[bool] = mapped_column(default=False)
-
-    def  __repr__(self) -> str:
-        return f"Characteristics(request_id={self.request_id}, is_paid={self.is_paid}, data={self.data})"
-
-class Summary(Base):
-    __tablename__ = "summary"
-
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    request_id: Mapped[int] = mapped_column(ForeignKey("requests.id"), unique=True)
-    data: Mapped[str] = mapped_column(TEXT, nullable=True)
-    is_paid: Mapped[bool] = mapped_column(default=False)
-
-    def __repr__(self) -> str:
-        return f"Summary(request_id={self.request_id}, is_paid={self.is_paid}, data={self.data})"
+# class Summary(Base):
+#     __tablename__ = "summary"
+#
+#     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+#     request_id: Mapped[int] = mapped_column(ForeignKey("requests.id"), unique=True)
+#     data: Mapped[str] = mapped_column(TEXT, nullable=True)
+#     is_paid: Mapped[bool] = mapped_column(default=False)
+#
+#     def __repr__(self) -> str:
+#         return f"Summary(request_id={self.request_id}, is_paid={self.is_paid}, data={self.data})"
 
 
 # class TonalityModel(Base):

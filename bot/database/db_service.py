@@ -65,11 +65,14 @@ class DatabaseService():
             request = session.get(Request, request_id)
             return request
 
+    #def get_request_by_url(self):
+
     def get_request_by_user_id(self, user_id: int) -> Request:
         with Session(self.engine) as session:
             request = session.query(Request).filter(Request.user_id == user_id).order_by(Request.datetime.desc()).first()
             return request
 
+    #by user_id
     def get_requests(self) -> list[Request]:
         with Session(self.engine) as session:
             requests = session.query(Request).all()
@@ -127,8 +130,8 @@ class DatabaseService():
 
 
 
-#service = DatabaseService("root", "123")
-#service.create_db()
+service = DatabaseService("root", "123")
+service.create_db()
 #service.add_roles()
 #service.add_user("fazylov_v", "admin", 100)
 #print(service.get_user_by_id(1).__repr__())
