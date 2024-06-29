@@ -4,9 +4,32 @@ import re
 import time
 import hashlib
 
+
+class TableManager:
+    def __init__(self):
+        self.page = 1
+
+page = TableManager()
 token = '6672835844:AAH204zBLHfaGJKJvsWuSiHQpXgTTKLfKZo'
 bot = tg.TeleBot(token)
 unnown_u = []
+data = [
+    ['/1111', '@irinacreek', 'user', '10', '222'],
+    ['/2222', '@irinanecreek', 'user', '8', '117000'],
+    ['/3333', '@neirinanocreek', 'ban', '2', '57000'],
+    ['/4444', '@somebody', 'admin', '9', '124000'],
+    # Добавьте больше данных для демонстрации пагинации
+    ['/5555', '@user5', 'user', '7', '25000'],
+    ['/6666', '@user6', 'user', '5', '50000'],
+    ['/7777', '@user7', 'user', '6', '15000'],
+    ['/8888', '@user8', 'user', '3', '80000'],
+    ['/9999', '@user9', 'user', '4', '60000'],
+    ['/1010', '@user10', 'user', '12', '70000'],
+    ['/1111', '@user11', 'user', '11', '40000'],
+    ['/1212', '@user12', 'user', '9', '30000']
+]
+columns = ['id', 'username', 'role','tokens', 'date']
+
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
     user_id_f = message.from_user.id
@@ -125,7 +148,6 @@ def send_welcome(message):
                                      text='Я вас не понял.\nВы можете посмортеть свои возможности, нажав кнопку Навигации')
     @bot.callback_query_handler(func=lambda call: True)
     def callback(call):
-
         t_id = message.chat.id
         num_b = 0
         if str(call.data)[-1] in '12345':
@@ -183,17 +205,37 @@ def send_welcome(message):
         elif bool(re.fullmatch(r'hisrory[1-20]', call.data)):
                 pass
         elif call.data == 'view_users_state':
+            table = create_table(columns, data, page.page)
+            k_table = create_table_button()
+            bot.edit_message_text(chat_id=t_id, message_id=call.message.message_id, text=table, reply_markup=k_table,parse_mode="MarkdownV2")
+        elif call.data == 'next':
+            if page.page <= len(data) // 10:
+                page.page += 1
+                table = create_table(columns, data, page.page)
+                k_table = create_table_button()
+                bot.edit_message_text(chat_id=t_id, message_id=call.message.message_id, text=table, reply_markup=k_table, parse_mode="MarkdownV2")
+        elif call.data == 'early':
+            if page.page > 1:
+                page.page -= 1
+                table = create_table(columns, data, page.page)
+                k_table = create_table_button()
+                bot.edit_message_text(chat_id=t_id, message_id=call.message.message_id,
+                                      text=table, reply_markup=k_table, parse_mode="MarkdownV2")
+        elif call.data == 'all_users_state':
             pass
         elif call.data == 'new_users_state':
-            date_keyboard = types.InlineKeyboardMarkup(row_width=1)
-            b_day = types.InlineKeyboardButton(text='День', callback_data='day')
-            b_week = types.InlineKeyboardButton(text='День', callback_data='week')
-            b_month = types.InlineKeyboardButton(text='День', callback_data='month')
-            b_back = types.InlineKeyboardButton(text='<<Назад', callback_data='back')
-            date_keyboard.add(b_day, b_month, b_month, b_back)
+            date_keyboard = create_periods_button()
             bot.edit_message_text(chat_id=t_id, message_id=call.message.message_id,
                                   text='Выберите период за который вывести статистику',
                                   reply_markup=date_keyboard)
+        elif call.data == 'back':
+            k_users = types.InlineKeyboardMarkup(row_width=1)
+            b_new_users = types.InlineKeyboardButton(text='Статистика по новым пользователям',
+                                                     callback_data='new_users_state')
+            b_view_users = types.InlineKeyboardButton(text='Просмотр пользователей', callback_data='view_users_state')
+            k_users.add(b_new_users, b_view_users)
+            bot.edit_message_text(chat_id=t_id, message_id=call.message.message_id,
+                                  text='Список новых пользователей', reply_markup=k_users)
 
 def get_last_20_by_user(user_id):
     try:
@@ -220,6 +262,15 @@ def create_fav_info(num_b):
     back = types.InlineKeyboardButton(text='<< Назад в избранное', callback_data='back_to_fav')
     fav_info.add(show, update, delete, back)
     return fav_info
+
+def create_periods_button():
+    date_keyboard = types.InlineKeyboardMarkup(row_width=1)
+    b_day = types.InlineKeyboardButton(text='День', callback_data='day')
+    b_week = types.InlineKeyboardButton(text='Неделя', callback_data='week')
+    b_month = types.InlineKeyboardButton(text='Месяц', callback_data='month')
+    b_back = types.InlineKeyboardButton(text='<< Назад', callback_data='back')
+    date_keyboard.add(b_day, b_month, b_month, b_back)
+    return date_keyboard
 #создание кнопок для избранного
 def create_list_of_button(list):
     if len(list) != 0:
@@ -393,4 +444,50 @@ def get_data():
 
 def create_history_m(dict):
     pass
+
+#ф-ция делающая таблицу из данных и колонок, вернет строку
+def create_table(columns, data, page=1):
+    if page != 0:
+        start = (page - 1) * 10
+        end = start + 10
+
+        # Получаем данные для текущей страницы
+        table_data = data[start:end]
+
+        # Вычисляем максимальную ширину для каждого столбца
+        column_widths = [max(len(str(item)) for item in col) for col in zip(*([columns] + table_data))]
+
+        # Увеличиваем ширину столбцов на 2 для дополнительного отступа
+        column_widths = [width + 2 for width in column_widths]
+
+        # Создаем строку с заголовками столбцов с учетом ширины
+        header_row = '| ' + ' | '.join(f"{col.ljust(column_widths[idx])}" for idx, col in enumerate(columns)) + ' |'
+
+        # Создаем строку-разделитель
+        separator_row = '+-' + '-+-'.join('-' * (width) for width in column_widths) + '-+'
+
+        # Создаем строки с данными
+        data_rows = []
+        for row in table_data:
+            data_row = '| ' + ' | '.join(f"{str(col).ljust(column_widths[idx])}" for idx, col in enumerate(row)) + ' |'
+            data_rows.append(data_row)
+
+        # Собираем таблицу из всех частей и заключаем её в обратные кавычки для моноширинного шрифта
+        table = '\n'.join([header_row, separator_row] + data_rows)
+
+        return f"```\n{table}\n```"
+
+
+def create_table_button():
+    k_table = types.InlineKeyboardMarkup(row_width=2)
+    b_next = types.InlineKeyboardButton(text='>', callback_data='next')
+    b_early = types.InlineKeyboardButton(text='<', callback_data='early')
+    b_show_all = types.InlineKeyboardButton(text='Статистика посещений всех пользователей',
+                                            callback_data='all_users_state')
+    b_back = types.InlineKeyboardButton(text='<< Назад', callback_data='back')
+    k_table.add(b_early, b_next)
+    k_table.add(b_show_all)
+    k_table.add(b_back)
+    return k_table
+
 bot.polling(none_stop=True)
