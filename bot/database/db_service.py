@@ -32,6 +32,7 @@ class DatabaseService():
             session.add(request)
             session.commit()
 
+    #unique user_id
     def add_token_request(self, user_id: int, amount: int):
         with Session(self.engine) as session:
             token_request = TokenRequest(user_id=user_id, amount=amount)
@@ -83,15 +84,15 @@ class DatabaseService():
             requests = session.query(Request).filter(Request.is_favourite).all()
             return requests
 
-    def get_characteristics(self, request_id: int) -> Optional[Characteristics]:
-        with Session(self.engine) as session:
-            characteristics = session.query(Characteristics).filter(Characteristics.request_id == request_id).first()
-            return characteristics
+    # def get_characteristics(self, request_id: int) -> Optional[Characteristics]:
+    #     with Session(self.engine) as session:
+    #         characteristics = session.query(Characteristics).filter(Characteristics.request_id == request_id).first()
+    #         return characteristics
 
-    def get_summary(self, request_id: int) -> Optional[Summary]:
-        with Session(self.engine) as session:
-            summary = session.query(Summary).filter(Summary.request_id == request_id).first()
-            return summary
+    # def get_summary(self, request_id: int) -> Optional[Summary]:
+    #     with Session(self.engine) as session:
+    #         summary = session.query(Summary).filter(Summary.request_id == request_id).first()
+    #         return summary
 
     def get_token_requests(self) -> list[TokenRequest]:
         with Session(self.engine) as session:
@@ -109,6 +110,10 @@ class DatabaseService():
             user = session.get(User, user_id)
             user.role_id = self.role_dict[role]
             session.commit()
+
+    def check_add_favourite(self, request_id: int):
+        with Session(self.engine) as session:
+            amount = session.query()
 
     def change_favourite(self, request_id: int, is_favourite: bool):
         with Session(self.engine) as session:
@@ -131,9 +136,12 @@ class DatabaseService():
 
 
 service = DatabaseService("root", "123")
-service.create_db()
-#service.add_roles()
-#service.add_user("fazylov_v", "admin", 100)
+#service.create_db()
+service.add_roles()
+service.add_user("fazylov_v", "admin", 100)
+service.add_user("chel", "banned", 0)
 #print(service.get_user_by_id(1).__repr__())
 #print(service.get_request_by_user_id(1))
 #print(service.get_user(1))
+
+

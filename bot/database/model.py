@@ -2,7 +2,7 @@
 from sqlalchemy import create_engine, DateTime, ForeignKey, String
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.sql import func
-from sqlalchemy.dialects.postgresql import JSONB, TIMESTAMP, TEXT
+from sqlalchemy.dialects.postgresql import JSONB, TIMESTAMP, TEXT, BIGINT
 
 class Base(DeclarativeBase):
     pass
