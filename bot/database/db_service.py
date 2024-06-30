@@ -1,7 +1,5 @@
 from typing import Optional
-
 from sqlalchemy import create_engine
-
 from model import *
 from sqlalchemy.orm import Session
 
@@ -140,13 +138,12 @@ class DatabaseService():
 
 
 
-service = DatabaseService("root", "123")
-#service.create_db()
+service = DatabaseService("postgres", "Xfq8ybR*")
+service.create_db()
 service.add_roles()
-service.add_user("fazylov_v", "admin", 100)
-service.add_user("chel", "banned", 0)
+#service.add_user("fazylov_v", "admin", 100)
+#service.add_user("chel", "banned", 0)
 #print(service.get_user_by_id(1).__repr__())
 #print(service.get_request_by_user_id(1))
 #print(service.get_user(1))
-
 
