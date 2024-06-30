@@ -1,5 +1,7 @@
 from typing import Optional
 
+from sqlalchemy import create_engine
+
 from model import *
 from sqlalchemy.orm import Session
 
@@ -22,39 +24,49 @@ class DatabaseService():
 
     def add_user(self, username: str, role: str, token_balance=5):
         with Session(self.engine) as session:
-            user = User(username=username, role_id=self.role_dict[role], token_balance=token_balance)
+            user = User(
+                username=username,
+                role_id=self.role_dict[role],
+                token_balance=token_balance)
             session.add(user)
             session.commit()
 
-    def add_request(self, user_id: int, video_url: str, video_information: str, message_id: int):
+    def add_request(self, user_id: int, video_url: str, video_information: str, message_id: int, characteristics: str, summary: str):
         with Session(self.engine) as session:
-            request = Request(user_id=user_id, video_url=video_url, video_information=video_information, message_id=message_id)
+            request = Request(
+                user_id=user_id,
+                video_url=video_url,
+                video_information=video_information,
+                message_id=message_id,
+                characteristics=characteristics,
+                summary=summary)
             session.add(request)
             session.commit()
 
     #unique user_id
     def add_token_request(self, user_id: int, amount: int):
         with Session(self.engine) as session:
-            token_request = TokenRequest(user_id=user_id, amount=amount)
+            token_request = TokenRequest(
+                user_id=user_id,
+                amount=amount)
             session.add(token_request)
-            session.commit()
-
-    def add_characteristics(self, request_id: int, data: str):
-        with Session(self.engine) as session:
-            characteristics = Characteristics(request_id=request_id, data=data, is_paid=True)
-            session.add(characteristics)
-            session.commit()
-
-    def add_summary(self, request_id: int, data: str):
-        with Session(self.engine) as session:
-            summary = Summary(request_id=request_id, data=data, is_paid=True)
-            session.add(summary)
             session.commit()
 
     def get_user(self, user_id: int) -> User:
         with Session(self.engine) as session:
             user = session.get(User, user_id)
             return user
+
+    def get_tokens_and_role(self, user_id: int) -> (int, str):
+        with Session(self.engine) as session:
+            user = session.get(User, user_id)
+
+            role_name = ''
+            for k, v in self.role_dict:
+                if user.role_id == v:
+                    role_name = k
+
+            return user.token_balance, role_name
 
     def get_users(self) -> list[User]:
         with Session(self.engine) as session:
@@ -66,7 +78,10 @@ class DatabaseService():
             request = session.get(Request, request_id)
             return request
 
-    #def get_request_by_url(self):
+    def get_request_by_url(self, video_url: str) -> Request:
+        with Session(self.engine) as session:
+            request = session.query(Request).filter(Request.video_url == video_url).order_by(Request.datetime.desc()).first()
+            return request
 
     def get_request_by_user_id(self, user_id: int) -> Request:
         with Session(self.engine) as session:
@@ -83,16 +98,6 @@ class DatabaseService():
         with Session(self.engine) as session:
             requests = session.query(Request).filter(Request.is_favourite).all()
             return requests
-
-    # def get_characteristics(self, request_id: int) -> Optional[Characteristics]:
-    #     with Session(self.engine) as session:
-    #         characteristics = session.query(Characteristics).filter(Characteristics.request_id == request_id).first()
-    #         return characteristics
-
-    # def get_summary(self, request_id: int) -> Optional[Summary]:
-    #     with Session(self.engine) as session:
-    #         summary = session.query(Summary).filter(Summary.request_id == request_id).first()
-    #         return summary
 
     def get_token_requests(self) -> list[TokenRequest]:
         with Session(self.engine) as session:

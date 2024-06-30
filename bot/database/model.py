@@ -1,5 +1,5 @@
 #Модуль для работы с базой данных
-from sqlalchemy import create_engine, DateTime, ForeignKey, String
+from sqlalchemy import DateTime, ForeignKey, String
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.sql import func
 from sqlalchemy.dialects.postgresql import JSONB, TIMESTAMP, TEXT, BIGINT
@@ -54,7 +54,8 @@ class Request(Base):
     def __repr__(self) -> str:
         return f"Request(id={self.id}, user_id={self.user_id}, " \
                f"video_url={self.video_url}, is_favourite={self.is_favourite}, " \
-               f"datetime={self.datetime}, video_information={self.video_information}, message_id={self.message_id})"
+               f"datetime={self.datetime}, video_information={self.video_information}, message_id={self.message_id}, " \
+               f"characteristics={self.characteristics}, summary={self.summary})"
 
 # class Data(Base):
 #     __tablename__ = "data"
