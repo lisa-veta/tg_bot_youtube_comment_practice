@@ -3,6 +3,12 @@ import telebot.types as types
 import re
 import time
 import hashlib
+from db_service import *
+import threading
+from collections import deque
+from sqlalchemy import create_engine, Column, Integer, String
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
 
 
 class TableManager:
@@ -30,9 +36,31 @@ data = [
 ]
 columns = ['id', 'username', 'role','tokens', 'date']
 
+# Нужно запускать сессию с бд при запуске бота, уточнить у Влада
+# Base.metadata.create_all(engine)
+# Session = sessionmaker(bind=engine)
+# session = Session()
+
+# Словарь для хранения информации о пользователях. Нужен для того, чтобы загружать в него
+# пользователей, которые уже есть в базе. Я думаю, будет правильно хранить их в кэше,
+# пока бот работает, чтобы не обращаться каждый раз к бд
+users = {}
+
+
+#
+# def load_users():
+#    global users
+#    users = {user.user_id: {
+#    'username': user.username, 'role': user.role, 'token_balance': token_balance}
+#    for user in session.query(User).all()}
+
+# load_users()
+
+
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
     user_id_f = message.from_user.id
+
     user_id = 2 #потом уберу, когда будет база данных с пользователями
     user_name = message.from_user.username
     keyboard = types.ReplyKeyboardMarkup(row_width=4, resize_keyboard=True)
@@ -48,6 +76,15 @@ def send_welcome(message):
     b_token = types.KeyboardButton('Выдать токены\U0001F4B8')
     b_swap_role = types.KeyboardButton('Выйти из режима администрирования\U0001F6AA')
     keyboard_admin.add(b_users_m, b_database, b_token, b_swap_role)
+
+    user_id = 1  # потом уберу, когда будет база данных с пользователями
+    user_name = message.from_user.username
+
+    # Если текущего пользователя нет, добавляем в бд
+    # if user_id not in users:
+    # add_user (self, username: str, role: str, token_balance=5)
+
+
     if user_id == 0:
         m = f'Здравствуйте {user_name}, вы впервые пользуетесь ботом.'
         bot.send_message(message.chat.id, text=m)
@@ -59,6 +96,7 @@ def send_welcome(message):
     elif user_id == 1:
         m = f'Здравствуйте {user_name}, с возвращением!.'
         bot.send_message(message.chat.id, text=m, reply_markup=keyboard)
+
 
 
     elif user_id == 2:
@@ -146,6 +184,71 @@ def send_welcome(message):
                 else:
                     bot.send_message(chat_id=message.chat.id,
                                      text='Я вас не понял.\nВы можете посмортеть свои возможности, нажав кнопку Навигации')
+
+        @bot.message_handler(func=lambda message: True)
+        def handle_button(message):
+            match message.text:
+                case 'История\U0001F4D6':
+                    history = get_last_20_by_user(message.from_user.id)
+                    keys = []
+                    values = []
+                    result = "Последние 20 видео, запрашиваемые вами:\n"
+                    i = 1
+                    for message_id, video_id, request_date in history:
+                        keys.append('/' + str(i))
+                        values.append(message_id)
+                        result += f"/{i} {video_id} от {request_date}\n"
+                        i += 1
+                    bot.send_message(message.chat.id, text=result)
+                    global dict_com
+                    dict_com = dict(zip(keys, values))
+
+                case 'Избранное\U00002763':
+                    # в дальнейшем будет подтягиваться из функции
+                    if is_file_empty() != True and len(get_favorite_video_ids(message.from_user.id)) != 0:
+                        fav = create_list_of_button(get_favorite_video_ids(message.from_user.id))
+                        bot.send_message(chat_id=message.chat.id, text='Вы добавили в избранное следующие видео:',
+                                         reply_markup=fav)
+                    else:
+                        bot.send_message(chat_id=message.chat.id,
+                                         text='Вы еще не добавили ни одного видео в избранное.')
+                case 'Аккаунт\U0001F921':
+                    bot.send_message(chat_id=message.chat.id, text="Вы нажали на Кнопку 1!")
+                case 'Навигация\U0001F5FA':
+                    bot.send_message(chat_id=message.chat.id, text="Вы нажали на Кнопку 1!")
+                case _:
+                    youtube_link_pattern = r'https?://(?:www\.)?youtube\.com/watch\?v=\w+'
+                    if re.search(youtube_link_pattern, message.text):
+                        tconv = lambda x: time.strftime("%H:%M:%S %d.%m.%Y", time.localtime(x))
+                        m_date = tconv(message.date)
+                        m_user_id = message.from_user.id
+                        m_id = message.message_id
+                        link = handle_youtube_link(message)
+                        write_to_file(m_id, m_user_id, link, m_date)
+                        m_queue = bot.send_message(chat_id=message.chat.id, text='Ваш запрос в очереди')
+                        # тут должна быть очередь
+                        time.sleep(5)
+                        # должно подтягиваться из БД
+                        # data = get_data()
+                        # message_text = data[0]
+                        # message_video_info = data[1]
+                        text = 'Название видео, дата публикации, кол-во просмотров, кол-во лайков'
+
+                        video_info = types.InlineKeyboardMarkup(row_width=1)
+                        show_video_info = types.InlineKeyboardButton(text='Запросить анализ видео',
+                                                                     callback_data='show_video_info')
+                        add_favourite = types.InlineKeyboardButton(text='Добавить видео в избранное',
+                                                                   callback_data='add_favourite')
+                        video_info.add(show_video_info, add_favourite)
+                        bot.edit_message_text(chat_id=message.chat.id, message_id=m_queue.message_id, text=text,
+                                              reply_markup=video_info)
+
+                    elif message.text in dict_com.keys():
+                        bot.forward_message(message.chat.id, message.chat.id, dict_com[message.text])
+                    else:
+                        bot.send_message(chat_id=message.chat.id,
+                                         text='Я вас не понял.\nВы можете посмортеть свои возможности, нажав кнопку Навигации')
+
     @bot.callback_query_handler(func=lambda call: True)
     def callback(call):
         t_id = message.chat.id
@@ -155,10 +258,10 @@ def send_welcome(message):
         if call.data == 'registration':
             unnown_u.append(message.from_user.id)
             bot.send_message(t_id, text='Мы вас запомнили')
-            #тут должен быть запрос в базу на изменение роли пользователя
+            # тут должен быть запрос в базу на изменение роли пользователя
 
         elif bool(re.fullmatch(r'favourite[1-5]', call.data)):
-            text = 'Здесь должно быть название, кол-во просмотров, дата публикации и кол-во лайков'#взять из функции в зависимости от видео(номера кнопки)
+            text = 'Здесь должно быть название, кол-во просмотров, дата публикации и кол-во лайков'  # взять из функции в зависимости от видео(номера кнопки)
             bot.edit_message_text(chat_id=t_id, message_id=call.message.message_id,
                                   text=text, reply_markup=create_fav_info(num_b))
 
@@ -193,13 +296,16 @@ def send_welcome(message):
         elif call.data == 'add_favourite':
             if is_file_empty() == True:
                 toggle_last_favorite(message.from_user.id)
-                bot.edit_message_text(chat_id=t_id,message_id=call.message.message_id, text='Видео добавленно в избранное')
+                bot.edit_message_text(chat_id=t_id, message_id=call.message.message_id,
+                                      text='Видео добавленно в избранное')
             else:
                 if check_favorite_limit(message.from_user.id):
                     toggle_last_favorite(message.from_user.id)
-                    bot.edit_message_text(chat_id=t_id,message_id=call.message.message_id, text='Видео добавленно в избранное')
+                    bot.edit_message_text(chat_id=t_id, message_id=call.message.message_id,
+                                          text='Видео добавленно в избранное')
                 else:
-                    bot.edit_message_text(chat_id=t_id,message_id=call.message.message_id, text='Вы не можете добавить видео, так как в избранном уже сохраненно 5 видео')
+                    bot.edit_message_text(chat_id=t_id, message_id=call.message.message_id,
+                                          text='Вы не можете добавить видео, так как в избранном уже сохраненно 5 видео')
         elif call.data == 'show_video_info':
             pass
         elif bool(re.fullmatch(r'hisrory[1-20]', call.data)):
@@ -236,6 +342,8 @@ def send_welcome(message):
             k_users.add(b_new_users, b_view_users)
             bot.edit_message_text(chat_id=t_id, message_id=call.message.message_id,
                                   text='Список новых пользователей', reply_markup=k_users)
+            pass
+
 
 def get_last_20_by_user(user_id):
     try:
@@ -254,6 +362,8 @@ def get_last_20_by_user(user_id):
     except IOError:
         print("Ошибка при чтении из файла.")
         return []
+
+
 def create_fav_info(num_b):
     fav_info = types.InlineKeyboardMarkup(row_width=2)
     show = types.InlineKeyboardButton(text='Просмотреть информацию', callback_data=('show_video_info' + str(num_b)))
@@ -262,6 +372,7 @@ def create_fav_info(num_b):
     back = types.InlineKeyboardButton(text='<< Назад в избранное', callback_data='back_to_fav')
     fav_info.add(show, update, delete, back)
     return fav_info
+
 
 def create_periods_button():
     date_keyboard = types.InlineKeyboardMarkup(row_width=1)
@@ -272,20 +383,73 @@ def create_periods_button():
     date_keyboard.add(b_day, b_month, b_month, b_back)
     return date_keyboard
 #создание кнопок для избранного
+
+
+# создание кнопок для избранного
+
 def create_list_of_button(list):
     if len(list) != 0:
         fav = types.InlineKeyboardMarkup()
         for i in range(len(list)):
-            button = types.InlineKeyboardButton(list[i], callback_data=('favourite' + str(i+1)))
+            button = types.InlineKeyboardButton(list[i], callback_data=('favourite' + str(i + 1)))
             fav.add(button)
         return fav
 
-#метод который возвращает ссылку на видео
+
+# метод возвращает ссылку на видео
+# def handle_youtube_link(message):
+#     youtube_link = re.search(r'https?://(?:www\.)?youtube\.com/watch\?v=\w+', message.text).group()
+#     return youtube_link
+
+# Очередь запросов анализа
+analytic_request_queue = deque()
+processing_queue = {}
+lock = threading.Lock()
+
+
+# Метод обработки YouTube ссылки и добавления запроса в очередь
 def handle_youtube_link(message):
     youtube_link = re.search(r'https?://(?:www\.)?youtube\.com/watch\?v=\w+', message.text).group()
-    return youtube_link
-#метож который записывает ссылку на видео и айди сообщения в файл, НАДО БУДЕТ ИЗМЕНИТЬ НА ЗАПИСЬ В БД + надо будет записывать название видео
+    user_id = message.from_user.id
 
+    with lock:
+        analytic_request_queue.append((user_id, youtube_link))
+        position = len(analytic_request_queue)
+
+    estimated_time = position * 10
+    bot.send_message(message.chat.id,
+                     f'Вы добавлены в очередь. Ваш номер в очереди: '
+                     f'{position}. Примерное время ожидания: {estimated_time} минут.')
+
+
+# Поток обработки запросов
+def process_requests():
+    while True:
+        if analytic_request_queue:
+            with lock:
+                user_id, youtube_link = analytic_request_queue.popleft()
+                processing_queue[user_id] = youtube_link
+
+            bot.send_message(user_id, 'Ваш запрос в обработке. Пожалуйста, подождите.')
+
+            # Обработка запроса
+            # Нужно заменить на отправку ссылки Обаме (Или другой моедли), надо уточнить у Лизы
+            time.sleep(60)  # имитация минутного ожидания
+
+            # После обработки
+            bot.send_message(user_id, 'Ваш запрос обработан. Вот результаты анализа.')
+
+            with lock:
+                del processing_queue[user_id]
+        time.sleep(5)  # Пауза перед проверкой очереди
+
+
+processing_thread = threading.Thread(target=process_requests)
+processing_thread.start()
+
+
+# метод записывает ссылку на видео и айди сообщения в файл,
+# НАДО БУДЕТ ИЗМЕНИТЬ НА ЗАПИСЬ В БД + надо будет записывать название видео
 def write_to_file(message_id, param1, param2, param3, param4=0, param5=0, param6=0):
     try:
         with open('requests.txt', 'a') as file:
@@ -308,7 +472,7 @@ def write_to_file(message_id, param1, param2, param3, param4=0, param5=0, param6
         print("Ошибка при записи в файл.")
 
 
-#метод, который забирает из файла параметры и возвращает список параметров, в дальнейщем надо поменять под БД
+# метод, который забирает из файла параметры и возвращает список параметров, в дальнейщем надо поменять под БД
 def read_from_file(message_id=None, param1=None, param2=None, param3=None, param4=None, param5=None, param6=None):
     try:
         with open('requests.txt', 'r') as file:
@@ -333,7 +497,8 @@ def read_from_file(message_id=None, param1=None, param2=None, param3=None, param
         print("Ошибка при чтении из файла.")
         return []
 
-#call.message.from_user.id
+
+# call.message.from_user.id
 def toggle_last_favorite(user_id):
     try:
         lines = []
@@ -361,6 +526,7 @@ def toggle_last_favorite(user_id):
     except IOError:
         print("Ошибка при работе с файлом.")
 
+
 def is_file_empty():
     try:
         with open('requests.txt', 'r') as file:
@@ -372,6 +538,8 @@ def is_file_empty():
     except IOError:
         print("Ошибка при чтении из файла.")
         return True
+
+
 def get_favorite_video_ids(user_id):
     try:
         with open('requests.txt', 'r') as file:
@@ -439,8 +607,10 @@ def unfavorite_by_video_id(user_id, video_id):
     except IOError:
         print("Ошибка при работе с файлом.")
 
+
 def get_data():
     pass
+
 
 def create_history_m(dict):
     pass
@@ -489,5 +659,6 @@ def create_table_button():
     k_table.add(b_show_all)
     k_table.add(b_back)
     return k_table
+
 
 bot.polling(none_stop=True)

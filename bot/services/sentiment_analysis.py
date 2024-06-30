@@ -87,7 +87,11 @@ class OllamaChat:
         response_text = "".join(response_parts)
         return response_text
 
-
+if __name__ == '__main__':
+    video_url = "https://www.youtube.com/watch?v=-yn0b8Dz69E"
+    chat = OllamaChat()
+    response = chat.get_tonality(video_url)
+    print(response)
 
 
 
