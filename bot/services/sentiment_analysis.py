@@ -17,7 +17,7 @@ class OllamaChat:
         with open("q_characteristics.txt", 'r', encoding='utf-8') as file:
             base_prompt = file.read()
 
-        prompt = "\n".join(comments) + "\n" + base_prompt
+        prompt = base_prompt + "\n".join(comments) + "\n" + base_prompt
 
         response_text = self.get_response_from_model(prompt)
         json_start = response_text.find("[")
@@ -87,11 +87,11 @@ class OllamaChat:
         response_text = "".join(response_parts)
         return response_text
 
-if __name__ == '__main__':
-    video_url = "https://www.youtube.com/watch?v=-yn0b8Dz69E"
-    chat = OllamaChat()
-    response = chat.get_tonality(video_url)
-    print(response)
+# if __name__ == '__main__':
+#     video_url = "https://www.youtube.com/watch?v=-yn0b8Dz69E"
+#     chat = OllamaChat()
+#     response = chat.get_tonality(video_url)
+#     print(response)
 
 
 
