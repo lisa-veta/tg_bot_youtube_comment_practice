@@ -1,14 +1,11 @@
+import hashlib
+import re
+import threading
+import time
+from collections import deque
+
 import telebot as tg
 import telebot.types as types
-import re
-import time
-import hashlib
-from db_service import *
-import threading
-from collections import deque
-from sqlalchemy import create_engine, Column, Integer, String
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
 
 
 class TableManager:
