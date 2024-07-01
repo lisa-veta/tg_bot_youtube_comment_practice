@@ -1,0 +1,195 @@
+[
+        {
+            "characteristic": "Патриотизм",
+            "countOfPositiveComments": 250,
+            "countOfNegativeComments": 700
+        }, {
+            "characteristic": "Сюжетная линия",
+            "countOfPositiveComments": 1200,
+            "countOfNegativeComments": 200
+        }, {
+            "characteristic": "Логика сюжета",
+            "countOfPositiveComments": 1000,
+            "countOfNegativeComments": 300
+        }, {
+            "characteristic": "Тематика фильма",
+            "countOfPositiveComments": 800,
+            "countOfNegativeComments": 500
+        }, {
+            "characteristic": "Влияние фильма на аудиторию",
+            "countOfPositiveComments": 1300,
+            "countOfNegativeComments": 200
+        }, {
+            "characteristic": "Формат и структура фильма",
+            "countOfPositiveComments": 900,
+            "countOfNegativeComments": 300
+        }, {
+            "characteristic": "Тема фильма и её значимость",
+            "countOfPositiveComments": 1100,
+            "countOfNegativeComments": 100
+        }, {
+            "characteristic": "Социальная значимость фильма",
+            "countOfPositiveComments": 1200,
+            "countOfNegativeComments": 200
+        }, {
+            "characteristic": "Ментозавры",
+            "countOfPositiveComments": 1000,
+            "countOfNegativeComments": 500
+        }, {
+            "characteristic": "Смешные моменты",
+            "countOfPositiveComments": 1200,
+            "countOfNegativeComments": 80
+        }, {
+            "characteristic": "Чувство юмора",
+            "countOfPositiveComments": 1100,
+            "countOfNegativeComments": 100
+        }, {
+            "characteristic": "Психологическая правдоподобность",
+            "countOfPositiveComments": 800,
+            "countOfNegativeComments": 300
+        }, {
+            "characteristic": "Музыкальное сопровождение",
+            "countOfPositiveComments": 700,
+            "countOfNegativeComments": 400
+        }, {
+            "characteristic": "Персонажи",
+            "countOfPositiveComments": 1100,
+            "countOfNegativeComments": 200
+        }, {
+            "characteristic": "Эмоциональная нагрузка",
+            "countOfPositiveComments": 1300,
+            "countOfNegativeComments": 200
+        }, {
+            "characteristic": "Ирония и сарказм",
+            "countOfPositiveComments": 1100,
+            "countOfNegativeComments": 100
+        }, {
+            "characteristic": "Эмоциональное воздействие",
+            "countOfPositiveComments": 1300,
+            "countOfNegativeComments": 200
+        }, {
+            "characteristic": "Мораль и моральные выводы",
+            "countOfPositiveComments": 1100,
+            "countOfNegativeComments": 200
+        }, {
+            "characteristic": "Психологическая глубина персонажей",
+            "countOfPositiveComments": 900,
+            "countOfNegativeComments": 300
+        }, {
+            "characteristic": "Психологическая правдоподобность ситуаций",
+            "countOfPositiveComments": 800,
+            "countOfNegativeComments": 400
+        }, {
+            "characteristic": "Логика развития сюжета",
+            "countOfPositiveComments": 1000,
+            "countOfNegativeComments": 300
+        }, {
+            "characteristic": "Эмоциональное напряжение",
+            "countOfPositiveComments": 1300,
+            "countOfNegativeComments": 200
+        }, {
+            "characteristic": "Психологические аспекты развития персонажей",
+            "countOfPositiveComments": 800,
+            "countOfNegativeComments": 400
+        }, {
+            "characteristic": "Психологическая правдоподобность персонажей",
+            "countOfPositiveComments": 900,
+            "countOfNegativeComments": 300
+        }, {
+            "characteristic": "Эмоциональное воздействие на зрителя",
+            "countOfPositiveComments": 1300,
+            "countOfNegativeComments": 200
+        }, {
+            "characteristic": "Психологическая правдоподобность событий",
+            "countOfPositiveComments": 800,
+            "countOfNegativeComments": 400
+        }, {
+            "characteristic": "Качество материала",
+            "countOfPositiveComments": 1500,
+            "countOfNegativeComments": 100
+        }, {
+            "characteristic": "Грамотная речь",
+            "countOfPositiveComments": 200,
+            "countOfNegativeComments": 300
+        }, {
+            "characteristic": "Историческая точность",
+            "countOfPositiveComments": 800,
+            "countOfNegativeComments": 400
+        }, {
+            "characteristic": "Развлекательность",
+            "countOfPositiveComments": 1300,
+            "countOfNegativeComments": 200
+        }, {
+            "characteristic": "Верность фактам",
+            "countOfPositiveComments": 900,
+            "countOfNegativeComments": 300
+        }, {
+            "characteristic": "Реализация идей",
+            "countOfPositiveComments": 950,
+            "countOfNegativeComments": 250
+        }, {
+            "characteristic": "Драматизм сцены",
+            "countOfPositiveComments": 600,
+            "countOfNegativeComments": 500
+        }, {
+            "characteristic": "Сценическая работа актёров",
+            "countOfPositiveComments": 1000,
+            "countOfNegativeComments": 300
+        }, {
+            "characteristic": "Режиссёрский подход",
+            "countOfPositiveComments": 800,
+            "countOfNegativeComments": 500
+        }, {
+            "characteristic": "Видео и звук",
+            "countOfPositiveComments": 1200,
+            "countOfNegativeComments": 100
+        }, {
+            "characteristic": "Качество монтажа",
+            "countOfPositiveComments": 900,
+            "countOfNegativeComments": 300
+        }, {
+            "characteristic": "Качество актёрской игры",
+            "countOfPositiveComments": 1000,
+            "countOfNegativeComments": 200
+        }, {
+            "characteristic": "Сценические эффекты",
+            "countOfPositiveComments": 1100,
+            "countOfNegativeComments": 100
+        }, {
+            "characteristic": "Игровые качества актёра",
+            "countOfPositiveComments": 900,
+            "countOfNegativeComments": 300
+        }, {
+            "characteristic": "Качество сценария",
+            "countOfPositiveComments": 1000,
+            "countOfNegativeComments": 300
+        }, {
+            "characteristic": "Визуальные эффекты",
+            "countOfPositiveComments": 1100,
+            "countOfNegativeComments": 100
+        }, {
+            "characteristic": "Роль в истории войны",
+            "countOfPositiveComments": 1200,
+            "countOfNegativeComments": 200
+        }, {
+            "characteristic": "Личность режиссёра",
+            "countOfPositiveComments": 800,
+            "countOfNegativeComments": 500
+        }, {
+            "characteristic": "Качество звуковой и видео части",
+            "countOfPositiveComments": 1000,
+            "countOfNegativeComments": 300
+        }, {
+            "characteristic": "Надоумительная идея",
+            "countOfPositiveComments": 700,
+            "countOfNegativeComments": 600
+        }, {
+            "characteristic": "Героический образ",
+            "countOfPositiveComments": 500,
+            "countOfNegativeComments": 400
+        }, {
+            "characteristic": "Интересный формат",
+            "countOfPositiveComments": 900,
+            "countOfNegativeComments": 300
+        }
+]
