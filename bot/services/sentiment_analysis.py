@@ -1,4 +1,6 @@
 #Модуль для анализа тональности комментариев
+import json
+
 import ollama
 import re
 
@@ -7,7 +9,7 @@ from youtube_service import YoutubeParser
 class OllamaChat:
     parser = YoutubeParser()
 
-    def __init__(self, model_name='llama3'):
+    def __init__(self, model_name='ilyagusev/saiga_llama3'):
         self.model_name = model_name
 
     def get_characteristics(self, url) -> str:
@@ -22,10 +24,41 @@ class OllamaChat:
         response_text = self.get_response_from_model(prompt)
         json_start = response_text.find("[")
         json_end = response_text.find("]")
-        if json_start != -1 and json_end != -1:
-            return response_text[json_start:json_end + 1]
-        else:
+        try:
+            json_data = json.loads(response_text[json_start:json_end + 1])
+            return json.dumps(json_data)
+        except json.JSONDecodeError:
             return response_text
+
+    def get_characteristics_by_single_comm(self, url) -> str:
+        url = self.get_video_code(url)
+        comments = self.parser.get_video_comments(url)
+        with open("q_characteristics_one_comment.txt", 'r', encoding='utf-8') as file:
+            base_prompt = file.read()
+        json_data = []
+        for comment in comments:
+            prompt = base_prompt + "\n".join(comment)
+            response_text = self.get_response_from_model(prompt)
+            try:
+                json_start = response_text.find("[")
+                json_end = response_text.find("]")
+                response_json = json.loads(response_text[json_start:json_end + 1])
+                for characteristic_item in response_json:
+                    characteristic_item["characteristic"] = characteristic_item[
+                        "characteristic"].lower()  # Преобразуем к нижнему регистру
+                    found = False
+                    for existing_item in json_data:
+                        if existing_item["characteristic"] == characteristic_item["characteristic"]:
+                            existing_item["countOfPositiveComments"] += characteristic_item["countOfPositiveComments"]
+                            existing_item["countOfNegativeComments"] += characteristic_item["countOfNegativeComments"]
+                            found = True
+                            break
+                    if not found:
+                        json_data.append(characteristic_item)
+                # print(json_data)
+            except json.JSONDecodeError:
+                print(f"Ошибка декодирования JSON: {response_text}")
+        return json.dumps(json_data)
 
     def get_tonality(self, url) -> str:
         url = self.get_video_code(url)
@@ -39,9 +72,10 @@ class OllamaChat:
         response_text = self.get_response_from_model(prompt)
         json_start = response_text.find("{")
         json_end = response_text.find("}")
-        if json_start != -1 and json_end != -1:
-            return response_text[json_start:json_end + 1]
-        else:
+        try:
+            json_data = json.loads(response_text[json_start:json_end + 1])
+            return json.dumps(json_data)
+        except json.JSONDecodeError:
             return response_text
 
     def get_summary(self, url) -> str:
@@ -88,10 +122,31 @@ class OllamaChat:
         return response_text
 
 # if __name__ == '__main__':
-#     video_url = "https://www.youtube.com/watch?v=-yn0b8Dz69E"
 #     chat = OllamaChat()
-#     response = chat.get_tonality(video_url)
-#     print(response)
+#     url = "https://www.youtube.com/watch?v=PmP6WIz2UWw"
+#     chat.get_characteristics_by_single_comm(url)
+    # json_data = []
+    # with open('ex.json', 'r', encoding='utf-8') as f:
+    #     response_text = f.read()
+    # try:
+    #     json_start = response_text.find("[")
+    #     json_end = response_text.find("]")
+    #     response_json = json.loads(response_text[json_start:json_end + 1])
+    #     for characteristic_item in response_json:
+    #         characteristic_item["characteristic"] = characteristic_item[
+    #             "characteristic"].lower()
+    #         found = False
+    #         for existing_item in json_data:
+    #             if existing_item["characteristic"] == characteristic_item["characteristic"]:
+    #                 existing_item["countOfPositiveComments"] += characteristic_item["countOfPositiveComments"]
+    #                 existing_item["countOfNegativeComments"] += characteristic_item["countOfNegativeComments"]
+    #                 found = True
+    #                 break
+    #         if not found:
+    #             json_data.append(characteristic_item)
+    #     print(json_data)
+    # except json.JSONDecodeError:
+    #     print(f"Ошибка декодирования JSON: {response_text}")
 
 
 

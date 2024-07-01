@@ -32,8 +32,10 @@ class CharacteristicClusterer:
             characteristics_text = [char['characteristic'] for char in group_characteristics]
             group_name_str = self.chat.get_group_name(characteristics_text)
             group_name = json.loads(group_name_str)["group"]
+            group_description = json.loads(group_name_str)["description"]
             groups.append({
                 "group": group_name,
+                "description": group_description,
                 "characteristics": group_characteristics
             })
         return {

@@ -1,78 +1,105 @@
+
+import datetime
 import plotly.express as px
 from sklearn.decomposition import PCA
 import plotly.graph_objects as go
 import json
+from bot.services.youtube_service import YoutubeParser
 from characteristic_clusterer import CharacteristicClusterer
 class GraphBuilder:
     def __init__(self):
         self.CharacteristicClusterer = CharacteristicClusterer()
 
-    def make_positive_bubble_plot(self, group_characteristics):
+
+    def make_positive_bubble_plot(self, group_characteristics, video_inf, color=None):
         groups = group_characteristics['groups']
         data = []
-        all_embeddings = [CharacteristicClusterer.get_embedding(char['characteristic']) for group in groups for char in
+        all_embeddings = [self.CharacteristicClusterer.get_embedding(char['characteristic']) for group in groups for
+                          char in
                           group['characteristics']]
-        pca = PCA(n_components=2)
-        vectors_2d = pca.fit_transform(all_embeddings)
-        group_colors = {}
+        if len(all_embeddings) == 1:
+            vectors_2d = [all_embeddings[0]]
+        else:
+            pca = PCA(n_components=2)
+            vectors_2d = pca.fit_transform(all_embeddings)
         index = 0
+        commentCount = 0
         for i, group in enumerate(groups):
-            group_colors[group['group']] = i
             for j, characteristic in enumerate(group['characteristics']):
                 hover_text = ('{characteristic}<br>' +
-                              'Количество позитивных комментариев: {count}').format(
+                              'Количество положительных комментариев: {count}').format(
                     characteristic=characteristic['characteristic'],
                     count=characteristic['countOfPositiveComments'])
+                commentCount += characteristic['countOfPositiveComments']
+                x = vectors_2d[index][0] if len(vectors_2d) > 1 else vectors_2d[0][0]
+                y = vectors_2d[index][1] if len(vectors_2d) > 1 else vectors_2d[0][1]
                 data.append({
-                    'x': vectors_2d[index][0],
-                    'y': vectors_2d[index][1],
+                    'x': x,
+                    'y': y,
                     'size': characteristic['countOfPositiveComments'],
-                    'color': group['group'],  # Changed to use group name instead of index
+                    'color': f"Группа {group['group']}",
                     'text': hover_text
                 })
                 index += 1
-        fig = px.scatter(data, x='x', y='y', size='size', color='color', hover_name='text', size_max=60)
-        fig.update_layout(title='Группы характеристик с позитивными комментариями', coloraxis_showscale=False)
+        fig = px.scatter(data, x='x', y='y', size='size', color='color', hover_name='text', size_max=60,
+                         color_discrete_sequence=[color] if color is not None else None)
+        if color is None:
+            commentCount = video_inf['commentCount']
+        formatted_date_time = self.parse_date_time(video_inf['published_at'])
+        fig.update_layout(title=f'Группы характеристик с позитивными комментариями для видео "{video_inf["title"]}"',
+                          legend_title=f"Дата публикации: {formatted_date_time}<br>"
+                                       f"Количество просмотров: {video_inf['viewCount']}<br>"
+                                       f"Количество лайков: {video_inf['likeCount']}<br>"
+                                       f"Количество проанализированных<br>комментариев: {commentCount}<br><br>")
         fig.update_traces(marker=dict(line=dict(width=2, color='White')))
-        # fig.write_html("characteristics_positive_plot.html", auto_open=False)
         return fig
 
-    def make_negative_bubble_plot(self, group_characteristics):
+    def make_negative_bubble_plot(self, group_characteristics, video_inf, color = None):
         groups = group_characteristics['groups']
         data = []
-        all_embeddings = [CharacteristicClusterer.get_embedding(char['characteristic']) for group in groups for char in
+        all_embeddings = [self.CharacteristicClusterer.get_embedding(char['characteristic']) for group in groups for char in
                           group['characteristics']]
-        pca = PCA(n_components=2)
-        vectors_2d = pca.fit_transform(all_embeddings)
-        group_colors = {}
+        if len(all_embeddings) == 1:
+            vectors_2d = [all_embeddings[0]]
+        else:
+            pca = PCA(n_components=2)
+            vectors_2d = pca.fit_transform(all_embeddings)
         index = 0
+        commentCount = 0
         for i, group in enumerate(groups):
-            group_colors[group['group']] = i
             for j, characteristic in enumerate(group['characteristics']):
                 hover_text = ('{characteristic}<br>' +
                               'Количество отрицательных комментариев: {count}').format(
                     characteristic=characteristic['characteristic'],
                     count=characteristic['countOfNegativeComments'])
+                commentCount += characteristic['countOfNegativeComments']
+                x = vectors_2d[index][0] if len(vectors_2d) > 1 else vectors_2d[0][0]
+                y = vectors_2d[index][1] if len(vectors_2d) > 1 else vectors_2d[0][1]
                 data.append({
-                    'x': vectors_2d[index][0],
-                    'y': vectors_2d[index][1],
+                    'x': x,
+                    'y': y,
                     'size': characteristic['countOfNegativeComments'],
-                    'color': group['group'],  # Changed to use group name instead of index
+                    'color': f"Группа {group['group']}",
                     'text': hover_text
                 })
                 index += 1
-        fig = px.scatter(data, x='x', y='y', size='size', color='color', hover_name='text', size_max=60)
-        fig.update_layout(title='Группы характеристик с негативными комментариями', coloraxis_showscale=False)
+        if color is None:
+            commentCount = video_inf['commentCount']
+        fig = px.scatter(data, x='x', y='y', size='size', color='color', hover_name='text', size_max=60,
+                         color_discrete_sequence=[color] if color is not None else None)
+        formatted_date_time = self.parse_date_time(video_inf['published_at'])
+        fig.update_layout(title=f'Группы характеристик с негативными комментариями для видео "{video_inf["title"]}"', coloraxis_showscale=False,  legend_title=f"Дата публикации: {formatted_date_time}<br>"
+                            f"Количество просмотров: {video_inf['viewCount']}<br>"
+                             f"Количество лайков: {video_inf['likeCount']}<br>"
+               f"Количество проанализированных<br>комментариев: {commentCount}<br><br>")
         fig.update_traces(marker=dict(line=dict(width=2, color='White')))
-        # fig.write_html("characteristics_negative_plot.html", auto_open=False)
         return fig
 
-    def make_main_graph(self, group_characteristics):
+    def make_main_graph(self, group_characteristics, video_inf):
         groups = []
         positive_values = []
         negative_values = []
         colors = []
-
         for i, group in enumerate(group_characteristics["groups"]):
             groups.append(group["group"])
             positive_sum = sum(
@@ -117,23 +144,26 @@ class GraphBuilder:
                     showlegend=False,
                 )
             )
-
+        formatted_date_time = self.parse_date_time(video_inf['published_at'])
         fig.update_layout(
-            title="Группы характеристик",
+            title=f'Группы характеристик для видео "{video_inf["title"]}"',
             xaxis_title="Группы",
             yaxis_title="Сумма комментариев",
-            barmode="overlay",  # Overlay the bars for alignment
+            barmode="overlay",
             bargap=0.2,  # Расстояние между столбиками
             bargroupgap=0.1,  # Расстояние между группами столбиков
             showlegend=True,  # Показывать легенду
-            legend_title="Группы:",
+            legend_title=f"Дата публикации: {formatted_date_time}<br>"
+                            f"Количество просмотров: {video_inf['viewCount']}<br>"
+                             f"Количество лайков: {video_inf['likeCount']}<br>"
+               f"Количество проанализированных<br>комментариев: {video_inf['commentCount']}<br><br>"
+                            "Группы:",
             yaxis_range=[min(negative_values) * 1.1, max(positive_values) * 1.1],
             font=dict(color="black", size=16),
         )
-
         # Добавление текста на оси Y
         fig.update_yaxes(
-            ticktext=["Отрицательные комментарии", "Положительные Комментарии"],
+            ticktext=["Отрицательные<br>комментарии", "Положительные<br>комментарии"],
             tickvals=[min(negative_values), max(positive_values)],
             tickmode="array",
         )
@@ -144,7 +174,6 @@ class GraphBuilder:
                 )
             )
         )
-
         for i in range(len(groups)):
             fig.add_annotation(
                 x=i,
@@ -153,21 +182,23 @@ class GraphBuilder:
                 showarrow=False,
                 font=dict(color="black", size=20),
             )
-        #fig.write_html("characteristics_new.html", auto_open=False)
-        #fig.write_image("characteristics_new.png", width=1800, height=800)
-        #fig.show()
+        fig.update_xaxes(
+            tickvals=list(range(len(groups))),
+            ticktext=groups,
+        )
         return fig
 
-    def get_main_group_graph(self, group_characteristics, selected_group):
+    def make_main_group_graph(self, group_characteristics, selected_group, video_inf):
         for group_data in group_characteristics["groups"]:
             if group_data["group"] == selected_group:
                 group_characteristics = group_data["characteristics"]
-
                 fig = go.Figure()
                 colors = [f"hsl({i * 360 / len(group_characteristics)}, 50%, 50%)" for i in
                           range(len(group_characteristics))]
-
+                x_labels = [characteristic["characteristic"] for characteristic in group_characteristics]
+                commentCount = 0
                 for i, characteristic in enumerate(group_characteristics):
+                    commentCount += characteristic['countOfPositiveComments'] + characteristic['countOfNegativeComments']
                     fig.add_trace(
                         go.Bar(
                             name=characteristic["characteristic"],
@@ -189,7 +220,6 @@ class GraphBuilder:
                             showlegend=False
                         )
                     )
-
                     fig.add_annotation(
                         x=i,
                         y=characteristic["countOfPositiveComments"] / 2,
@@ -197,25 +227,28 @@ class GraphBuilder:
                         showarrow=False,
                         font=dict(color="black", size=20),
                     )
-
+                formatted_date_time = self.parse_date_time(video_inf['published_at'])
                 fig.update_layout(
-                    title=f"Характеристики группы '{selected_group}'",
+                    title=f'Характеристики группы "{selected_group}" для видео "{video_inf["title"]}"',
                     xaxis_title="Характеристики",
                     yaxis_title="Сумма комментариев",
                     barmode="overlay",
                     bargap=0.2,
                     bargroupgap=0.1,
                     showlegend=True,
-                    legend_title=f"Характеристики:",
+                    legend_title=f"Дата публикации: {formatted_date_time}<br>"
+                                 f"Количество просмотров: {video_inf['viewCount']}<br>"
+                                 f"Количество лайков: {video_inf['likeCount']}<br>"
+                                 f"Количество проанализированных<br>комментариев: {commentCount}<br><br>"
+                                 "Характеристики:",
                     yaxis_range=[min([-characteristic["countOfNegativeComments"] for characteristic in
                                       group_characteristics]) * 1.1,
                                  max([characteristic["countOfPositiveComments"] for characteristic in
                                       group_characteristics]) * 1.1],
                     font=dict(color="black", size=16),
                 )
-
                 fig.update_yaxes(
-                    ticktext=["Отрицательные комментарии", "Положительные комментарии"],
+                    ticktext=["Отрицательные<br>комментарии", "Положительные<br>комментарии"],
                     tickvals=[
                         min([-characteristic["countOfNegativeComments"] for characteristic in
                              group_characteristics]),
@@ -223,13 +256,24 @@ class GraphBuilder:
                              group_characteristics])],
                     tickmode="array",
                 )
-
                 fig.update_xaxes(
                     tickvals=list(range(len(group_characteristics))),
-                    ticktext=[str(i) for i in range(len(group_characteristics))],
+                    ticktext=x_labels,
                 )
-
-                #fig.write_html("group_characteristics.html", auto_open=False)
-                #fig.write_image("group_characteristics.png", width=1800, height=800)
-                #fig.show()
                 return fig
+
+    def parse_date_time(self, video_inf_date):
+        dt_obj = datetime.datetime.strptime(video_inf_date, '%Y-%m-%dT%H:%M:%SZ')
+        formatted_date_time = dt_obj.strftime('%Y-%m-%d %H:%M:%S')
+        return formatted_date_time
+#
+# if __name__ == '__main__':
+#     with open('group.json', 'r', encoding='utf-8') as f:
+#         groups = json.load(f)
+#     youtube_parser = YoutubeParser()
+#     video_inf = youtube_parser.get_general_inf("nIkH6C3_CX8")
+#     graph = GraphBuilder()
+#     fig = graph.make_main_graph(groups, video_inf)
+#     fig.show()
+#     # fig = graph.make_main_group_graph(groups, groups["groups"][0]["group"], video_inf)
+#     # fig.show()
