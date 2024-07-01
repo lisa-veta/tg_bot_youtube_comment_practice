@@ -1,0 +1,341 @@
+{
+  "groups": [
+    {
+      "group": "военный профессионализм",
+      "description": "описание",
+      "characteristics": [
+        {
+          "characteristic": "Профессиональный подход",
+          "countOfPositiveComments": 364,
+          "countOfNegativeComments": 9,
+          "countOfNeutralComments": 34
+        },
+        {
+          "characteristic": "Подход к теме ВОВ",
+          "countOfPositiveComments": 1205,
+          "countOfNegativeComments": 30,
+          "countOfNeutralComments": 12
+        }
+      ]
+    },
+    {
+      "group": "Видео качества",
+      "description": "описание",
+      "characteristics": [
+        {
+          "characteristic": "Качество озвучивания",
+          "countOfPositiveComments": 311,
+          "countOfNegativeComments": 6,
+          "countOfNeutralComments": 8
+        },
+        {
+          "characteristic": "Соответствие ожиданиям зрителя",
+          "countOfPositiveComments": 252,
+          "countOfNegativeComments": 8,
+          "countOfNeutralComments": 121
+        },
+        {
+          "characteristic": "Качество материала",
+          "countOfPositiveComments": 763,
+          "countOfNegativeComments": 2,
+          "countOfNeutralComments": 3
+        },
+        {
+          "characteristic": "Продолжительность",
+          "countOfPositiveComments": 1211,
+          "countOfNegativeComments": 3,
+          "countOfNeutralComments": 5
+        },
+        {
+          "characteristic": "Музыкальное сопровождение",
+          "countOfPositiveComments": 72,
+          "countOfNegativeComments": 2,
+          "countOfNeutralComments": 3
+        },
+        {
+          "characteristic": "Регулярность выхода роликов",
+          "countOfPositiveComments": 454,
+          "countOfNegativeComments": 5,
+          "countOfNeutralComments": 24
+        },
+        {
+          "characteristic": "Влияние на аудиторию",
+          "countOfPositiveComments": 752,
+          "countOfNegativeComments": 1,
+          "countOfNeutralComments": 3
+        },
+        {
+          "characteristic": "Продуманность структуры",
+          "countOfPositiveComments": 1005,
+          "countOfNegativeComments": 20,
+          "countOfNeutralComments": 10
+        },
+        {
+          "characteristic": "Качество монтажа",
+          "countOfPositiveComments": 550,
+          "countOfNegativeComments": 10,
+          "countOfNeutralComments": 5
+        },
+        {
+          "characteristic": "Удобство просмотра",
+          "countOfPositiveComments": 1456,
+          "countOfNegativeComments": 0,
+          "countOfNeutralComments": 2
+        },
+        {
+          "characteristic": "Музыкальное сопровождение",
+          "countOfPositiveComments": 15,
+          "countOfNegativeComments": 5,
+          "countOfNeutralComments": 0
+        },
+        {
+          "characteristic": "Субтитры",
+          "countOfPositiveComments": 0,
+          "countOfNegativeComments": 5,
+          "countOfNeutralComments": 1
+        },
+        {
+          "characteristic": "Реакция на фильм",
+          "countOfPositiveComments": 1200,
+          "countOfNegativeComments": 20,
+          "countOfNeutralComments": 10
+        }
+      ]
+    },
+    {
+      "group": "Образовательные параметры",
+      "description": "описание",
+      "characteristics": [
+        {
+          "characteristic": "Уроки",
+          "countOfPositiveComments": 155,
+          "countOfNegativeComments": 0,
+          "countOfNeutralComments": 2
+        },
+        {
+          "characteristic": "Краткость",
+          "countOfPositiveComments": 864,
+          "countOfNegativeComments": 56,
+          "countOfNeutralComments": 5
+        },
+        {
+          "characteristic": "Aтмосфера",
+          "countOfPositiveComments": 684,
+          "countOfNegativeComments": 84,
+          "countOfNeutralComments": 10
+        }
+      ]
+    },
+    {
+      "group": "исторические характеристики",
+      "description": "описание",
+      "characteristics": [
+        {
+          "characteristic": "Историческая достоверность",
+          "countOfPositiveComments": 4342,
+          "countOfNegativeComments": 233,
+          "countOfNeutralComments": 142
+        },
+        {
+          "characteristic": "История",
+          "countOfPositiveComments": 4220,
+          "countOfNegativeComments": 5,
+          "countOfNeutralComments": 8
+        },
+        {
+          "characteristic": "Знание истории",
+          "countOfPositiveComments": 1592,
+          "countOfNegativeComments": 123,
+          "countOfNeutralComments": 7
+        },
+        {
+          "characteristic": "Советский период",
+          "countOfPositiveComments": 822,
+          "countOfNegativeComments": 2,
+          "countOfNeutralComments": 4
+        },
+        {
+          "characteristic": "История России",
+          "countOfPositiveComments": 1522,
+          "countOfNegativeComments": 5,
+          "countOfNeutralComments": 6
+        },
+        {
+          "characteristic": "Историческая точность",
+          "countOfPositiveComments": 932,
+          "countOfNegativeComments": 48,
+          "countOfNeutralComments": 8
+        },
+        {
+          "characteristic": "Объективность",
+          "countOfPositiveComments": 1332,
+          "countOfNegativeComments": 10,
+          "countOfNeutralComments": 8
+        },
+        {
+          "characteristic": "Историческая точность",
+          "countOfPositiveComments": 750,
+          "countOfNegativeComments": 20,
+          "countOfNeutralComments": 10
+        },
+        {
+          "characteristic": "Восприятие истории",
+          "countOfPositiveComments": 150,
+          "countOfNegativeComments": 30,
+          "countOfNeutralComments": 40
+        }
+      ]
+    },
+    {
+      "group": "Курс",
+      "description": "описание",
+      "characteristics": [
+        {
+          "characteristic": "Глубина знаний",
+          "countOfPositiveComments": 102,
+          "countOfNegativeComments": 35,
+          "countOfNeutralComments": 15
+        },
+        {
+          "characteristic": "Мнение о России",
+          "countOfPositiveComments": 206,
+          "countOfNegativeComments": 15,
+          "countOfNeutralComments": 18
+        },
+        {
+          "characteristic": "Познавательность",
+          "countOfPositiveComments": 1156,
+          "countOfNegativeComments": 21,
+          "countOfNeutralComments": 3
+        },
+        {
+          "characteristic": "Визуализация",
+          "countOfPositiveComments": 780,
+          "countOfNegativeComments": 66,
+          "countOfNeutralComments": 4
+        },
+        {
+          "characteristic": "Озвучка",
+          "countOfPositiveComments": 742,
+          "countOfNegativeComments": 70,
+          "countOfNeutralComments": 6
+        },
+        {
+          "characteristic": "Соотношение теории к практике",
+          "countOfPositiveComments": 550,
+          "countOfNegativeComments": 2,
+          "countOfNeutralComments": 18
+        },
+        {
+          "characteristic": "Связь с реальностью",
+          "countOfPositiveComments": 796,
+          "countOfNegativeComments": 5,
+          "countOfNeutralComments": 3
+        },
+        {
+          "characteristic": "Психологическая мотивация",
+          "countOfPositiveComments": 694,
+          "countOfNegativeComments": 0,
+          "countOfNeutralComments": 3
+        },
+        {
+          "characteristic": "Информационная ценность",
+          "countOfPositiveComments": 850,
+          "countOfNegativeComments": 20,
+          "countOfNeutralComments": 10
+        },
+        {
+          "characteristic": "Чувство глубины",
+          "countOfPositiveComments": 475,
+          "countOfNegativeComments": 15,
+          "countOfNeutralComments": 5
+        },
+        {
+          "characteristic": "Современные технологий",
+          "countOfPositiveComments": 375,
+          "countOfNegativeComments": 10,
+          "countOfNeutralComments": 5
+        },
+        {
+          "characteristic": "Сюжетная линия",
+          "countOfPositiveComments": 1000,
+          "countOfNegativeComments": 10,
+          "countOfNeutralComments": 8
+        }
+      ]
+    },
+    {
+      "group": "Военные аспекты",
+      "description": "описание",
+      "characteristics": [
+        {
+          "characteristic": "Роль родины в войне",
+          "countOfPositiveComments": 1000,
+          "countOfNegativeComments": 10,
+          "countOfNeutralComments": 30
+        },
+        {
+          "characteristic": "Решения военачальников",
+          "countOfPositiveComments": 80,
+          "countOfNegativeComments": 20,
+          "countOfNeutralComments": 10
+        },
+        {
+          "characteristic": "Герои войны",
+          "countOfPositiveComments": 900,
+          "countOfNegativeComments": 30,
+          "countOfNeutralComments": 40
+        }
+      ]
+    },
+    {
+      "group": "Игривость",
+      "description": "описание",
+      "characteristics": [
+        {
+          "characteristic": "Интересность для детей",
+          "countOfPositiveComments": 423,
+          "countOfNegativeComments": 5,
+          "countOfNeutralComments": 101
+        },
+        {
+          "characteristic": "Интересность",
+          "countOfPositiveComments": 1235,
+          "countOfNegativeComments": 6,
+          "countOfNeutralComments": 66
+        },
+        {
+          "characteristic": "Оригинальность",
+          "countOfPositiveComments": 542,
+          "countOfNegativeComments": 1,
+          "countOfNeutralComments": 4
+        },
+        {
+          "characteristic": "Уникальность",
+          "countOfPositiveComments": 223,
+          "countOfNegativeComments": 2,
+          "countOfNeutralComments": 52
+        },
+        {
+          "characteristic": "Интересные факты",
+          "countOfPositiveComments": 600,
+          "countOfNegativeComments": 15,
+          "countOfNeutralComments": 5
+        },
+        {
+          "characteristic": "Чувство динамизма",
+          "countOfPositiveComments": 400,
+          "countOfNegativeComments": 15,
+          "countOfNeutralComments": 5
+        },
+        {
+          "characteristic": "Информативность",
+          "countOfPositiveComments": 800,
+          "countOfNegativeComments": 30,
+          "countOfNeutralComments": 20
+        }
+      ]
+    }
+  ]
+}
+

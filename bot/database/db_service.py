@@ -102,6 +102,11 @@ class DatabaseService():
             token_requests = session.query(TokenRequest).all()
             return token_requests
 
+    def get_token_request(self, token_request_id) -> TokenRequest:
+        with Session(self.engine) as session:
+            token_request = session.get(TokenRequest, token_request_id)
+            return token_request
+
     def add_tokens(self, user_id: int, amount: int):
         with Session(self.engine) as session:
             user = session.get(User, user_id)
@@ -136,11 +141,21 @@ class DatabaseService():
             session.delete(token_request)
             session.commit()
 
+    def accept_token_request(self, token_request_id: int):
+        token_request = self.get_token_request(token_request_id)
+        amount = token_request.amount
+        user_id = token_request.user_id
+        self.add_tokens(user_id, amount)
+        self.delete_token_request(token_request_id)
+
+    def reject_token_request(self, token_request_id: int):
+        self.delete_token_request(token_request_id)
 
 
-service = DatabaseService("postgres", "Xfq8ybR*")
+
+
+service = DatabaseService("root", "123")
 service.create_db()
-service.add_roles()
 #service.add_user("fazylov_v", "admin", 100)
 #service.add_user("chel", "banned", 0)
 #print(service.get_user_by_id(1).__repr__())
