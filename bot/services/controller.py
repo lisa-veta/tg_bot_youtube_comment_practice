@@ -1,9 +1,12 @@
 import json
-from bot.services.youtube_service import YoutubeParser
+import sys
+import os
+from youtube_service import YoutubeParser
 from sentiment_analysis import OllamaChat
 from characteristic_clusterer import CharacteristicClusterer
 from graph_builder import GraphBuilder
-from bot.utils.json_parser import get_characteristics
+sys.path.insert(1, os.path.join(sys.path[0], 'C:/Users/Королева/PycharmProjects/tg_youtube_analytics/bot/utils'))
+from json_parser import get_characteristics
 class Controller:
     def __init__(self):
         self.chat = OllamaChat()

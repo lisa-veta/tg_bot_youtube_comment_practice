@@ -7,8 +7,8 @@ from telebot.async_telebot import AsyncTeleBot
 from telebot.types import Message, CallbackQuery, InlineKeyboardMarkup
 from telebot import types
 import re
-sys.path.insert(1, os.path.join(sys.path[0], 'C:/Users/Королева/PycharmProjects/new_bot/services'))
-import controller
+# sys.path.insert(1, os.path.join(sys.path[0], 'C:/Users/Королева/PycharmProjects/tg_youtube_analytics/bot/services'))
+# import controller
 
 class User:
     def __init__(self):
@@ -80,7 +80,7 @@ class UnknownCommandHandler(BaseHandler):
             await self.bot.send_message(message.chat.id, "Извините, я не понял эту команду.")
 
 class InlineButtonHandler(BaseHandler):
-    def __init__(self, bot: AsyncTeleBot, user: User, chat: Chat, controller: controller.Controller):
+    def __init__(self, bot: AsyncTeleBot, user: User, chat: Chat, controller: Controller):
         self.bot = bot
         self.user = user
         self.chat = chat

@@ -4,7 +4,7 @@ import plotly.express as px
 from sklearn.decomposition import PCA
 import plotly.graph_objects as go
 import json
-from bot.services.youtube_service import YoutubeParser
+from youtube_service import YoutubeParser
 from characteristic_clusterer import CharacteristicClusterer
 class GraphBuilder:
     def __init__(self):
