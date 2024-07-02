@@ -1,8 +1,8 @@
 from typing import Optional
 from sqlalchemy import create_engine
-from model import *
+from bot.database.model import *
 from sqlalchemy.orm import Session
-
+import pandas as pd
 class DatabaseService():
     role_dict = {'user': 1, 'admin': 2, 'banned': 3}
 
@@ -107,6 +107,21 @@ class DatabaseService():
             token_request = session.get(TokenRequest, token_request_id)
             return token_request
 
+    def get_user_requests(self, user_id: int) -> pd.DataFrame:
+        with self.engine.connect() as conn:
+            query = f"""
+                SELECT 
+                    date(datetime) AS request_date,
+                    COUNT(*) AS request_count
+                FROM public.requests
+                WHERE user_id = {user_id}
+                AND datetime >= CURRENT_DATE - INTERVAL '7 day' 
+                GROUP BY request_date
+                ORDER BY request_date;
+            """
+            df = pd.read_sql(query, conn)
+        return df
+
     def add_tokens(self, user_id: int, amount: int):
         with Session(self.engine) as session:
             user = session.get(User, user_id)
@@ -154,8 +169,8 @@ class DatabaseService():
 
 
 
-service = DatabaseService("root", "123")
-service.create_db()
+# service = DatabaseService("root", "123")
+# service.create_db()
 #service.add_user("fazylov_v", "admin", 100)
 #service.add_user("chel", "banned", 0)
 #print(service.get_user_by_id(1).__repr__())
