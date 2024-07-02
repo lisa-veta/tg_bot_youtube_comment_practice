@@ -3,6 +3,7 @@ from bot.services.youtube_service import YoutubeParser
 from sentiment_analysis import OllamaChat
 from characteristic_clusterer import CharacteristicClusterer
 from graph_builder import GraphBuilder
+from bot.utils.json_parser import get_characteristics
 class Controller:
     def __init__(self):
         self.chat = OllamaChat()
@@ -19,7 +20,8 @@ class Controller:
         #print(characteristics)
         groups = self.clusterer.group_characteristics(characteristics, count_groups)
         return groups
-    def get_json_groups_existed(self, characteristics_json, count_groups):
+    def get_json_groups_existed(self, bd_json, count_groups):
+        characteristics_json = get_characteristics(bd_json)
         groups = self.clusterer.group_characteristics(characteristics_json, count_groups)
         return groups
 

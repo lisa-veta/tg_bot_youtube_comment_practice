@@ -1,7 +1,6 @@
 import json
 import datetime
 from typing import List, Tuple, Any, Dict
-import json
 
 
 def parse_video_inf(inf_json: dict) -> (str, datetime, int, int, int):

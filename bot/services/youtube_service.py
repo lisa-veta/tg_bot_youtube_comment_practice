@@ -104,5 +104,5 @@ class YoutubeParser:
 #
 # if __name__ == '__main__':
 #     youtube_parser = YoutubeParser()
-#     json = youtube_parser.get_general_inf("GjkuE3Q18TQ")
+#     json = youtube_parser.get_general_inf("https://www.youtube.com/watch?v=GjkuE3Q18TQ&t=1s")
 #     print(json)
