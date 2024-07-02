@@ -37,26 +37,26 @@ class DatabaseService():
                 return False
             return True
 
-    def add_request(self, user_id: int, video_url: str, message_id: int):
-        with Session(self.engine) as session:
-            request = Request(
-                user_id=user_id,
-                video_url=video_url,
-                message_id=message_id)
-            session.add(request)
-            session.commit()
+    # def add_request(self, user_id: int, video_url: str, message_id: int):
+    #     with Session(self.engine) as session:
+    #         request = Request(
+    #             user_id=user_id,
+    #             video_url=video_url,
+    #             message_id=message_id)
+    #         session.add(request)
+    #         session.commit()
 
-# def add_request(self, user_id: int, video_url: str, video_information: str, message_id: int, characteristics: str, summary: str):
-#     with Session(self.engine) as session:
-#         request = Request(
-#             user_id=user_id,
-#             video_url=video_url,
-#             video_information=video_information,
-#             message_id=message_id,
-#             characteristics=characteristics,
-#             summary=summary)
-#         session.add(request)
-#         session.commit()
+def add_request(self, user_id: int, video_url: str, video_information: str, message_id: int, characteristics: str, summary: str):
+    with Session(self.engine) as session:
+        request = Request(
+            user_id=user_id,
+            video_url=video_url,
+            video_information=video_information,
+            message_id=message_id,
+            characteristics=characteristics,
+            summary=summary)
+        session.add(request)
+        session.commit()
 
     #unique user_id
     def add_token_request(self, user_id: int, amount: int):
@@ -171,9 +171,10 @@ class DatabaseService():
 
 
 
-#service = DatabaseService("root", "123")
-#service.add_roles()
-#service.create_db()
+# service = DatabaseService("postgres", "20i16t04s")
+# service.create_db()
+# service.add_roles()
+
 #service.add_user("fazylov_v", "admin", 100)
 #service.add_user("chel", "banned", 0)
 #print(service.get_user_by_id(1).__repr__())
