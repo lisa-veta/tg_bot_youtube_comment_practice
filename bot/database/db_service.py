@@ -128,6 +128,19 @@ class DatabaseService():
             user.token_balance = amount
             session.commit()
 
+    def can_request(self, user_id: int) -> bool:
+        with Session(self.engine) as session:
+            user = session.get(User, user_id)
+            if user.token_balance > 0:
+                return True
+            return False
+
+    def minus_token(self, user_id: int):
+        with Session(self.engine) as session:
+            user = session.get(User, user_id)
+            user.token_balance -= 1
+            session.commit()
+
     def change_role(self, user_id: int, role: str):
         with Session(self.engine) as session:
             user = session.get(User, user_id)
