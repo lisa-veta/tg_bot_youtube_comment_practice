@@ -1,13 +1,14 @@
 #Сервис для работы с API YouTube
 from googleapiclient.discovery import build
 import requests
-
+import re
 class YoutubeParser:
     def __init__(self):
         self.YT_api_key = 'AIzaSyCGros2SeZwb4utjrTfL2Hcbuc2kx4FxJI'
         self.SA_api_key = 'fWG6yD8V8C9aUjJaXrpGnT5b'
 
-    def get_general_inf(self, video_id):
+    def get_general_inf(self, video_url):
+        video_id = self.get_video_code(video_url)
         url = f"https://www.googleapis.com/youtube/v3/videos?part=statistics,snippet&id={video_id}&key={self.YT_api_key}"
         response = requests.get(url)
         if response.status_code == 200:
@@ -32,14 +33,16 @@ class YoutubeParser:
             print(f"Ошибка: {response.status_code} - {response.text}")
             return None
 
-    def get_comment_count(self, video_id):
+    def get_comment_count(self, video_url):
+        video_id = self.get_video_code(video_url)
         general_info = self.get_general_inf(video_id)
         if general_info:
             return general_info['commentCount']
         else:
             return None
 
-    def get_video_comments(self, video_id):
+    def get_video_comments(self, video_url):
+        video_id = self.get_video_code(video_url)
         comments = []
         youtube = build('youtube', 'v3', developerKey=self.YT_api_key)
         video_response = youtube.commentThreads().list(
@@ -78,7 +81,8 @@ class YoutubeParser:
         #     i += 1
         return comments
 
-    def get_subtitles(self, video_id):
+    def get_subtitles(self, video_url):
+        video_id = self.get_video_code(video_url)
         url = "https://www.searchapi.io/api/v1/search"
         params = {
             "api_key": self.SA_api_key,
@@ -92,6 +96,11 @@ class YoutubeParser:
             return [item["text"] for item in data.get("transcripts", []) if "text" in item]
         else:
             return None
+
+    def get_video_code(self, video_url):
+        match = re.search(r'v=([^&]+)', video_url)
+        if match:
+            return match.group(1)
 #
 # if __name__ == '__main__':
 #     youtube_parser = YoutubeParser()

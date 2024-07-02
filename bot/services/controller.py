@@ -1,5 +1,5 @@
 import json
-
+import re
 from bot.services.youtube_service import YoutubeParser
 from sentiment_analysis import OllamaChat
 from characteristic_clusterer import CharacteristicClusterer
@@ -9,6 +9,10 @@ class Controller:
         self.chat = OllamaChat()
         self.clusterer = CharacteristicClusterer()
         self.graph_builder = GraphBuilder()
+
+    def get_video_info(self, video_url) -> dict:
+        youtube_parser = YoutubeParser()
+        return youtube_parser.get_general_inf(video_url)
 
     def get_json_groups(self, video_url, count_groups):
         characteristics_str = self.chat.get_characteristics(video_url)
@@ -52,7 +56,9 @@ class Controller:
         return json_groups
 
 # if __name__ == '__main__':
-#     controller = Controller()
+#
+#      controller = Controller()
+#      print(controller.get_video_info("https://www.youtube.com/watch?v=EKrPIu4gQtc"))
 #     # groups = controller.get_json_groups("https://www.youtube.com/watch?v=EKrPIu4gQtc", 3)
 #     # print(groups)
 #     # with open('char.json', 'r', encoding='utf-8') as f:

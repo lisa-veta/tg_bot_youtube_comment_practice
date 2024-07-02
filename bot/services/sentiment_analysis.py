@@ -13,8 +13,6 @@ class OllamaChat:
         self.model_name = model_name
 
     def get_characteristics(self, url) -> str:
-        url = self.get_video_code(url)
-
         comments = self.parser.get_video_comments(url)
         with open("q_characteristics.txt", 'r', encoding='utf-8') as file:
             base_prompt = file.read()
@@ -31,7 +29,6 @@ class OllamaChat:
             return response_text
 
     def get_characteristics_by_single_comm(self, url) -> str:
-        url = self.get_video_code(url)
         comments = self.parser.get_video_comments(url)
         with open("q_characteristics_one_comment.txt", 'r', encoding='utf-8') as file:
             base_prompt = file.read()
@@ -61,8 +58,6 @@ class OllamaChat:
         return json.dumps(json_data)
 
     def get_tonality(self, url) -> str:
-        url = self.get_video_code(url)
-
         comments = self.parser.get_video_comments(url)
         with open("q_tonality.txt", 'r', encoding='utf-8') as file:
             base_prompt = file.read()
@@ -79,8 +74,6 @@ class OllamaChat:
             return response_text
 
     def get_summary(self, url) -> str:
-        url = self.get_video_code(url)
-
         subtitles = self.parser.get_subtitles(url)
         if subtitles is None:
             return None
@@ -103,12 +96,6 @@ class OllamaChat:
             return response_text[json_start:json_end + 1]
         else:
             return response_text
-
-    def get_video_code(self, url) -> str:
-        match = re.search(r'v=([^&]+)', url)
-        if match:
-            return match.group(1)
-        #else:
 
     def get_response_from_model(self, prompt: str) -> str:
         stream = ollama.chat(model=self.model_name,
