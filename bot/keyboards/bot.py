@@ -7,8 +7,8 @@ from telebot.async_telebot import AsyncTeleBot
 from telebot.types import Message, CallbackQuery, InlineKeyboardMarkup
 from telebot import types
 import re
-sys.path.insert(1, os.path.join(sys.path[0], 'C:/Users/Королева/PycharmProjects/new_bot/services'))
-import controller
+# sys.path.insert(1, os.path.join(sys.path[0], 'C:/Users/Королева/PycharmProjects/tg_youtube_analytics/bot/services'))
+# import controller
 
 class User:
     def __init__(self):
@@ -56,13 +56,7 @@ class StartHandler(BaseHandler):
             user_keyboard.add(b_account, b_history, b_favorite, b_help)
             await self.bot.send_message(self.chat.chat_id, "Вы зашли под ролью - пользователь.\nОтправьте мне ссылку на видео, которое хотите проанализировать или использьзуйте вашу клавиатуру", reply_markup=user_keyboard)
 
-class LinkHandler(BaseHandler):
-    async def handle(self, message: Message):
-        self.chat.video_link = message.text
-        button = types.InlineKeyboardMarkup(row_width=3)
-        b_list = [types.InlineKeyboardButton(text=str(i), callback_data= str(i)) for i in range(1,11)]
-        button.add(*b_list)
-        await self.bot.send_message(self.chat.chat_id, "Выделенно 50 характеристик. Введите количество групп, на которые вы хотите разделить характеристики (от 1 до 10)", reply_markup=button)
+
 class HelpHandler(BaseHandler):
     async def handle(self, message: Message):
         await self.bot.send_message(message.chat.id, "Доступные команды:\n/start - Запустить бота\n/help - Показать помощь")
@@ -86,7 +80,7 @@ class UnknownCommandHandler(BaseHandler):
             await self.bot.send_message(message.chat.id, "Извините, я не понял эту команду.")
 
 class InlineButtonHandler(BaseHandler):
-    def __init__(self, bot: AsyncTeleBot, user: User, chat: Chat, controller: controller.Controller):
+    def __init__(self, bot: AsyncTeleBot, user: User, chat: Chat, controller: Controller):
         self.bot = bot
         self.user = user
         self.chat = chat

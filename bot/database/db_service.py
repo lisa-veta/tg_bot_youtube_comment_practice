@@ -1,8 +1,8 @@
 from typing import Optional
 from sqlalchemy import create_engine
-from bot.database.model import *
+from model import *
 from sqlalchemy.orm import Session
-import pandas as pd
+
 class DatabaseService():
     role_dict = {'user': 1, 'admin': 2, 'banned': 3}
 
@@ -169,8 +169,8 @@ class DatabaseService():
 
 
 
-# service = DatabaseService("root", "123")
-# service.create_db()
+service = DatabaseService("root", "123")
+service.create_db()
 #service.add_user("fazylov_v", "admin", 100)
 #service.add_user("chel", "banned", 0)
 #print(service.get_user_by_id(1).__repr__())
