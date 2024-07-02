@@ -2,7 +2,7 @@ import json
 import datetime
 from typing import List, Tuple, Any, Dict
 import json
-from dateutil.parser import *
+
 
 def parse_video_inf(inf_json: dict) -> (str, datetime, int, int, int):
     title = inf_json["title"]
@@ -12,7 +12,7 @@ def parse_video_inf(inf_json: dict) -> (str, datetime, int, int, int):
     comments = int(inf_json["commentCount"])
     return title, formatted_date_time, views, likes, comments
 
-def parse_groups(groups_json: dict) -> list[tuple[str, str]]:
+def parse_groups(groups_json: dict) -> list[tuple[str, str]]:#метод для извлечения названий групп с описанием
     groups_dicts = groups_json["groups"]
     groups = list()
     for group in groups_dicts:
@@ -21,7 +21,17 @@ def parse_groups(groups_json: dict) -> list[tuple[str, str]]:
         groups.append((name, description))
     return groups
 
-def parse_characteristics(groups_json: dict) -> List[Dict[str, int]]:
+def add_count_group_to_characteristics(characteristics_json: dict, group_count: int) -> dict:#метод для преобразования данных для хранения в бд
+    bd_data = {
+        "group_count": group_count,
+        "characteristics": characteristics_json
+    }
+    return bd_data
+
+def get_characteristics(bd_data: dict) -> list:#извлечение списка характистик из json поступившего из бд
+    return bd_data["characteristics"]
+
+def ungroup_characteristics(groups_json: dict) -> List[Dict[str, int]]:#метод для извлечения списка характеристик из json с группами
     characteristics = []
     for group in groups_json["groups"]:
         for characteristic in group["characteristics"]:
@@ -42,7 +52,3 @@ def parse_date_time(video_inf_date):
 #groups = parse_groups(file.read())
 #print(groups)
 
-with open('group.json', 'r', encoding='utf-8') as f:
-    groups_json = f.read()
-characteristics = parse_characteristics(groups_json)
-print(characteristics)
