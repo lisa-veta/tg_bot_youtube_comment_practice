@@ -56,13 +56,7 @@ class StartHandler(BaseHandler):
             user_keyboard.add(b_account, b_history, b_favorite, b_help)
             await self.bot.send_message(self.chat.chat_id, "Вы зашли под ролью - пользователь.\nОтправьте мне ссылку на видео, которое хотите проанализировать или использьзуйте вашу клавиатуру", reply_markup=user_keyboard)
 
-class LinkHandler(BaseHandler):
-    async def handle(self, message: Message):
-        self.chat.video_link = message.text
-        button = types.InlineKeyboardMarkup(row_width=3)
-        b_list = [types.InlineKeyboardButton(text=str(i), callback_data= str(i)) for i in range(1,11)]
-        button.add(*b_list)
-        await self.bot.send_message(self.chat.chat_id, "Выделенно 50 характеристик. Введите количество групп, на которые вы хотите разделить характеристики (от 1 до 10)", reply_markup=button)
+
 class HelpHandler(BaseHandler):
     async def handle(self, message: Message):
         await self.bot.send_message(message.chat.id, "Доступные команды:\n/start - Запустить бота\n/help - Показать помощь")

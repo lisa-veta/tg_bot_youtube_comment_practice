@@ -20,26 +20,43 @@ class DatabaseService():
             session.add_all([user, admin, banned])
             session.commit()
 
-    def add_user(self, username: str, role: str, token_balance=5):
+    def add_user(self, user_id: int, username: str, role="user", token_balance=5):
         with Session(self.engine) as session:
             user = User(
+                id=user_id,
                 username=username,
                 role_id=self.role_dict[role],
                 token_balance=token_balance)
             session.add(user)
             session.commit()
 
-    def add_request(self, user_id: int, video_url: str, video_information: str, message_id: int, characteristics: str, summary: str):
+    def user_exist(self, user_id: int):
+        with Session(self.engine) as session:
+            user = session.get(User, user_id)
+            if user == None:
+                return False
+            return True
+
+    def add_request(self, user_id: int, video_url: str, message_id: int):
         with Session(self.engine) as session:
             request = Request(
                 user_id=user_id,
                 video_url=video_url,
-                video_information=video_information,
-                message_id=message_id,
-                characteristics=characteristics,
-                summary=summary)
+                message_id=message_id)
             session.add(request)
             session.commit()
+
+# def add_request(self, user_id: int, video_url: str, video_information: str, message_id: int, characteristics: str, summary: str):
+#     with Session(self.engine) as session:
+#         request = Request(
+#             user_id=user_id,
+#             video_url=video_url,
+#             video_information=video_information,
+#             message_id=message_id,
+#             characteristics=characteristics,
+#             summary=summary)
+#         session.add(request)
+#         session.commit()
 
     #unique user_id
     def add_token_request(self, user_id: int, amount: int):
@@ -154,8 +171,9 @@ class DatabaseService():
 
 
 
-service = DatabaseService("root", "123")
-service.create_db()
+#service = DatabaseService("root", "123")
+#service.add_roles()
+#service.create_db()
 #service.add_user("fazylov_v", "admin", 100)
 #service.add_user("chel", "banned", 0)
 #print(service.get_user_by_id(1).__repr__())
