@@ -1,5 +1,4 @@
 import json
-import re
 from bot.services.youtube_service import YoutubeParser
 from sentiment_analysis import OllamaChat
 from characteristic_clusterer import CharacteristicClusterer
@@ -14,11 +13,14 @@ class Controller:
         youtube_parser = YoutubeParser()
         return youtube_parser.get_general_inf(video_url)
 
-    def get_json_groups(self, video_url, count_groups):
+    def get_json_groups_from_chat(self, video_url, count_groups):
         characteristics_str = self.chat.get_characteristics(video_url)
         characteristics = json.loads(characteristics_str)
         #print(characteristics)
         groups = self.clusterer.group_characteristics(characteristics, count_groups)
+        return groups
+    def get_json_groups_existed(self, characteristics_json, count_groups):
+        groups = self.clusterer.group_characteristics(characteristics_json, count_groups)
         return groups
 
     def get_general_positive_bubble_graph(self, json_groups: dict,  video_info: dict):

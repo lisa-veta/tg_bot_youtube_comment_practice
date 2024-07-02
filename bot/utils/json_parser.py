@@ -21,10 +21,11 @@ def parse_groups(groups_json: dict) -> list[tuple[str, str]]:#метод для 
         groups.append((name, description))
     return groups
 
-def add_count_group_to_characteristics(characteristics_json: dict, group_count: int) -> dict:#метод для преобразования данных для хранения в бд
+def add_count_group_to_characteristics(groups_json: dict, group_count: int) -> dict:#метод для преобразования данных для хранения в бд
+    characteristics = ungroup_characteristics(groups_json)
     bd_data = {
         "group_count": group_count,
-        "characteristics": characteristics_json
+        "characteristics": characteristics
     }
     return bd_data
 
