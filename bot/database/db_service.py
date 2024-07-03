@@ -12,6 +12,7 @@ class DatabaseService():
     role_dict = {'user': 1, 'admin': 2, 'banned': 3}
 
     def __init__(self, user: str, password: str):
+        self.engine = None
         self.user = user
         self.password = password
 
