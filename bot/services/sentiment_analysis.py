@@ -1,6 +1,6 @@
 #Модуль для анализа тональности комментариев
 import json
-
+import asyncio
 import ollama
 import re
 
@@ -12,14 +12,14 @@ class OllamaChat:
     def __init__(self, model_name='ilyagusev/saiga_llama3'):
         self.model_name = model_name
 
-    def get_characteristics(self, url) -> str:
-        comments = self.parser.get_video_comments(url)
-        with open("q_characteristics.txt", 'r', encoding='utf-8') as file:
+    async def get_characteristics(self, url) -> str:
+        comments = await self.parser.get_video_comments(url)
+        with open("D:/УНИВЕР/практика/проба/code/bot/services/q_characteristics.txt", 'r', encoding='utf-8') as file:
             base_prompt = file.read()
-
+        base_prompt = ""
         prompt = base_prompt + "\n".join(comments) + "\n" + base_prompt
 
-        response_text = self.get_response_from_model(prompt)
+        response_text = await self.get_response_from_model(prompt)
         json_start = response_text.find("[")
         json_end = response_text.find("]")
         try:
@@ -28,14 +28,14 @@ class OllamaChat:
         except json.JSONDecodeError:
             return response_text
 
-    def get_characteristics_by_single_comm(self, url) -> str:
-        comments = self.parser.get_video_comments(url)
-        with open("q_characteristics_one_comment.txt", 'r', encoding='utf-8') as file:
+    async def get_characteristics_by_single_comm(self, url) -> str:
+        comments = await self.parser.get_video_comments(url)
+        with open("D:/УНИВЕР/практика/проба/code/bot/services/q_characteristics_one_comment.txt", 'r', encoding='utf-8') as file:
             base_prompt = file.read()
         json_data = []
         for comment in comments:
             prompt = base_prompt + "\n".join(comment)
-            response_text = self.get_response_from_model(prompt)
+            response_text = await self.get_response_from_model(prompt)
             try:
                 json_start = response_text.find("[")
                 json_end = response_text.find("]")
@@ -57,14 +57,14 @@ class OllamaChat:
                 print(f"Ошибка декодирования JSON: {response_text}")
         return json.dumps(json_data)
 
-    def get_tonality(self, url) -> str:
-        comments = self.parser.get_video_comments(url)
+    async def get_tonality(self, url) -> str:
+        comments = await self.parser.get_video_comments(url)
         with open("q_tonality.txt", 'r', encoding='utf-8') as file:
             base_prompt = file.read()
 
         prompt = "\n".join(comments) + "\n" + base_prompt
 
-        response_text = self.get_response_from_model(prompt)
+        response_text = await self.get_response_from_model(prompt)
         json_start = response_text.find("{")
         json_end = response_text.find("}")
         try:
@@ -73,23 +73,23 @@ class OllamaChat:
         except json.JSONDecodeError:
             return response_text
 
-    def get_summary(self, url) -> str:
-        subtitles = self.parser.get_subtitles(url)
+    async def get_summary(self, url) -> str:
+        subtitles = await self.parser.get_subtitles(url)
         if subtitles is None:
             return None
-        with open("q_summary.txt", 'r', encoding='utf-8') as file:
+        with open("D:/УНИВЕР/практика/проба/code/bot/services/q_summary.txt", 'r', encoding='utf-8') as file:
             base_prompt = file.read()
 
         prompt = "\n".join(subtitles) + "\n" + base_prompt
-        response_text = self.get_response_from_model(prompt)
+        response_text = await self.get_response_from_model(prompt)
         return response_text
 
-    def get_group_name(self, characteristics) -> str:
-        with open("q_group_name.txt", 'r', encoding='utf-8') as file:
+    async def get_group_name(self, characteristics) -> str:
+        with open("D:/УНИВЕР/практика/проба/code/bot/services/q_group_name.txt", 'r', encoding='utf-8') as file:
             base_prompt = file.read()
 
         prompt = base_prompt + "\n".join(characteristics) + "\n"
-        response_text = self.get_response_from_model(prompt)
+        response_text = await self.get_response_from_model(prompt)
         json_start = response_text.find("{")
         json_end = response_text.find("}")
         if json_start != -1 and json_end != -1:
@@ -97,7 +97,7 @@ class OllamaChat:
         else:
             return response_text
 
-    def get_response_from_model(self, prompt: str) -> str:
+    async def get_response_from_model(self, prompt: str) -> str:
         stream = ollama.chat(model=self.model_name,
                              messages=[{'role': 'user', 'content': prompt}],
                              stream=True)

@@ -11,10 +11,10 @@ class GraphBuilder:
         self.CharacteristicClusterer = CharacteristicClusterer()
 
 
-    def make_positive_bubble_plot(self, group_characteristics, video_inf, color=None):
+    async def make_positive_bubble_plot(self, group_characteristics, video_inf, color=None):
         groups = group_characteristics['groups']
         data = []
-        all_embeddings = [self.CharacteristicClusterer.get_embedding(char['characteristic']) for group in groups for
+        all_embeddings = [await self.CharacteristicClusterer.get_embedding(char['characteristic']) for group in groups for
                           char in
                           group['characteristics']]
         if len(all_embeddings) == 1:
@@ -54,10 +54,10 @@ class GraphBuilder:
         fig.update_traces(marker=dict(line=dict(width=2, color='White')))
         return fig
 
-    def make_negative_bubble_plot(self, group_characteristics, video_inf, color = None):
+    async def make_negative_bubble_plot(self, group_characteristics, video_inf, color = None):
         groups = group_characteristics['groups']
         data = []
-        all_embeddings = [self.CharacteristicClusterer.get_embedding(char['characteristic']) for group in groups for char in
+        all_embeddings = [await self.CharacteristicClusterer.get_embedding(char['characteristic']) for group in groups for char in
                           group['characteristics']]
         if len(all_embeddings) == 1:
             vectors_2d = [all_embeddings[0]]
@@ -95,7 +95,7 @@ class GraphBuilder:
         fig.update_traces(marker=dict(line=dict(width=2, color='White')))
         return fig
 
-    def make_main_graph(self, group_characteristics, video_inf):
+    async def make_main_graph(self, group_characteristics, video_inf):
         groups = []
         positive_values = []
         negative_values = []
@@ -188,7 +188,7 @@ class GraphBuilder:
         )
         return fig
 
-    def make_main_group_graph(self, group_characteristics, selected_group, video_inf):
+    async def make_main_group_graph(self, group_characteristics, selected_group, video_inf):
         for group_data in group_characteristics["groups"]:
             if group_data["group"] == selected_group:
                 group_characteristics = group_data["characteristics"]

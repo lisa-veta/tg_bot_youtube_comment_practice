@@ -1,3 +1,4 @@
+import json
 from typing import Optional
 import asyncio
 import pandas as pd
@@ -28,17 +29,19 @@ class DatabaseService():
             await session.add_all([user, admin, banned])
             await session.commit()
 
-    async def add_user(self, username: str, role: str, token_balance=5):
+    async def add_user(self, user_id: int, username: str, role: str, token_balance=5):
         async with AsyncSession(self.engine) as session:
             user = User(
+                id = user_id,
                 username=username,
                 role_id=self.role_dict[role],
                 token_balance=token_balance)
-            await session.add(user)
+            session.add(user)
             await session.commit()
 
-    async def add_request(self, user_id: int, video_url: str, video_information: str, message_id: int, characteristics: str, summary: str):
+    async def add_request(self, user_id: int, video_url: str, video_information: dict, message_id: int, characteristics: str, summary: str):
         async with AsyncSession(self.engine) as session:
+            video_information_str = json.dumps(video_information)
             request = Request(
                 user_id=user_id,
                 video_url=video_url,
@@ -46,7 +49,7 @@ class DatabaseService():
                 message_id=message_id,
                 characteristics=characteristics,
                 summary=summary)
-            await session.add(request)
+            session.add(request)
             await session.commit()
 
     #unique user_id
@@ -55,7 +58,7 @@ class DatabaseService():
             token_request = TokenRequest(
                 user_id=user_id,
                 amount=amount)
-            await session.add(token_request)
+            session.add(token_request)
             await session.commit()
 
     async def get_user(self, user_id: int) -> User:
@@ -190,8 +193,12 @@ class DatabaseService():
 
 
 
-#service = DatabaseService("root", "123")
-#service.create_db()
+# service = DatabaseService("root", "123")
+# rec = Request()
+# rec = service.get_request_by_url("https://www.youtube.com/watch?v=nIkH6C3_CX8")
+# print(rec.characteristics["characteristics"])
+
+# service.create_db()
 #service.add_user("fazylov_v", "admin", 100)
 #service.add_user("chel", "banned", 0)
 #print(service.get_user_by_id(1).__repr__())

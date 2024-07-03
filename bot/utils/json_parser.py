@@ -20,15 +20,21 @@ def parse_groups(groups_json: dict) -> list[tuple[str, str]]:#метод для 
         groups.append((name, description))
     return groups
 
-def add_count_group_to_characteristics(groups_json: dict, group_count: int) -> dict:#метод для преобразования данных для хранения в бд
+def add_count_group_to_groups(groups_json: dict, group_count: int) -> dict:#метод для преобразования данных для хранения в бд
     characteristics = ungroup_characteristics(groups_json)
     bd_data = {
         "group_count": group_count,
         "characteristics": characteristics
     }
     return bd_data
+def add_count_group_to_characteristics(characteristics: dict, group_count: int) -> dict:
+    bd_data = {
+        "group_count": group_count,
+        "characteristics": characteristics
+    }
+    return bd_data
 
-def get_characteristics(bd_data: dict) -> list:#извлечение списка характистик из json поступившего из бд
+def get_characteristics(bd_data: dict) -> dict:#извлечение списка характистик из json поступившего из бд
     return bd_data["characteristics"]
 
 def ungroup_characteristics(groups_json: dict) -> List[Dict[str, int]]:#метод для извлечения списка характеристик из json с группами
@@ -42,6 +48,9 @@ def parse_date_time(video_inf_date):
     dt_obj = datetime.datetime.strptime(video_inf_date, '%Y-%m-%dT%H:%M:%SZ')
     formatted_date_time = dt_obj.strftime('%Y-%m-%d %H:%M:%S')
     return formatted_date_time
+
+def get_count_characteristics(characteristics: dict) -> int:
+    return len(characteristics)
 
 
 #file = open("../../data/general_inf.json", "r")

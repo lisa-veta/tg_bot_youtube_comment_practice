@@ -21,7 +21,7 @@ class User(Base):
     role_id: Mapped[int] = mapped_column(ForeignKey("roles.id"))
     username: Mapped[str] = mapped_column(String(30), nullable=False)
     token_balance: Mapped[int] = mapped_column(default=5)
-    date_registration: Mapped[DateTime] = mapped_column(TIMESTAMP, server_default=func.now())
+    data_registration: Mapped[DateTime] = mapped_column(TIMESTAMP, server_default=func.now())
 
     def __repr__(self) -> str:
         return f"User(id={self.id!r}, role_id={self.role_id!r}, " \
@@ -47,9 +47,9 @@ class Request(Base):
     video_url: Mapped[str] = mapped_column(String(200), nullable=False)
     is_favourite: Mapped[bool] = mapped_column(default=False)
     datetime: Mapped[DateTime] = mapped_column(TIMESTAMP, server_default=func.now())
-    video_information: Mapped[str] = mapped_column(JSONB, nullable=True)
+    video_information: Mapped[dict] = mapped_column(JSONB, nullable=True)
     message_id: Mapped[int] = mapped_column()
-    characteristics: Mapped[str] = mapped_column(JSONB, nullable=True)
+    characteristics: Mapped[dict] = mapped_column(JSONB, nullable=True)
     summary: Mapped[str] = mapped_column(TEXT, nullable=True)
 
     def __repr__(self) -> str:
