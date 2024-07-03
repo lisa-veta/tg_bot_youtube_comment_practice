@@ -1,4 +1,7 @@
+import json
 from typing import Optional
+
+import pandas as pd
 from sqlalchemy import create_engine
 from model import *
 from sqlalchemy.orm import Session
@@ -7,7 +10,7 @@ class DatabaseService():
     role_dict = {'user': 1, 'admin': 2, 'banned': 3}
 
     def __init__(self, user: str, password: str):
-        self.engine = create_engine("postgresql+psycopg2://" + user + ":" + password + "@localhost/practice")
+        self.engine = create_engine("postgresql+psycopg2://" + "postgres" + ":" +"Xfq8ybR*" + "@localhost/practice")
 
     def create_db(self):
         Base.metadata.create_all(self.engine)
@@ -20,17 +23,19 @@ class DatabaseService():
             session.add_all([user, admin, banned])
             session.commit()
 
-    def add_user(self, username: str, role: str, token_balance=5):
+    def add_user(self, user_id, username: str, role: str, token_balance=5):
         with Session(self.engine) as session:
             user = User(
+                id = user_id,
                 username=username,
                 role_id=self.role_dict[role],
                 token_balance=token_balance)
             session.add(user)
             session.commit()
 
-    def add_request(self, user_id: int, video_url: str, video_information: str, message_id: int, characteristics: str, summary: str):
+    def add_request(self, user_id: int, video_url: str, video_information: dict, message_id: int, characteristics: dict, summary: str):
         with Session(self.engine) as session:
+            video_information_str = json.dumps(video_information)
             request = Request(
                 user_id=user_id,
                 video_url=video_url,
@@ -182,8 +187,12 @@ class DatabaseService():
 
 
 
-service = DatabaseService("root", "123")
-service.create_db()
+# service = DatabaseService("root", "123")
+# rec = Request()
+# rec = service.get_request_by_url("https://www.youtube.com/watch?v=nIkH6C3_CX8")
+# print(rec.characteristics["characteristics"])
+
+# service.create_db()
 #service.add_user("fazylov_v", "admin", 100)
 #service.add_user("chel", "banned", 0)
 #print(service.get_user_by_id(1).__repr__())
