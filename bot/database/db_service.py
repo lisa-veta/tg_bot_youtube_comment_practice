@@ -168,6 +168,12 @@ class DatabaseService():
             request.is_favourite = is_favourite
             await session.commit()
 
+    async def change_last_request_favourite(self, user_id: int, video_url: str, is_favourite: bool):
+        async with Session(self.engine) as session:
+            request = request = await session.query(Request).filter(Request.user_id == user_id).filter(Request.video_url == video_url).order_by(Request.datetime.desc()).first()
+            request.is_favourite = is_favourite
+            await session.commit()
+
     async def delete_user(self, user_id: int):
         async with Session(self.engine) as session:
             user = await session.get(User, user_id)
