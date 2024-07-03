@@ -189,18 +189,16 @@ async def cancel_handler(callback_query: CallbackQuery, state: FSMContext):
         f"Операция отменена")
 
 
-
-
-
 @router.message(Form.groups)
 async def groups_handler(message: Message, state: FSMContext):
+    data = await state.get_data()
+    characteristics =  data.get("characteristics")
     if not message.text.isdigit():
         await state.set_state(Form.groups)
-        await message.answer(f"Я вас не понял. Введите любое число от 2 до 49:")
+        await message.answer(f"Я вас не понял. Введите любое число от 2 до {(len(characteristics)-1)}")
     else:
         num_groups = int(message.text)
         data = await state.get_data()
-        characteristics = data.get("characteristics")
         if num_groups >= 2 and num_groups <= (len(characteristics)-1):
             await state.update_data(groups=num_groups)
             msg = await message.answer(f"Идет обработка для {num_groups} групп...")
