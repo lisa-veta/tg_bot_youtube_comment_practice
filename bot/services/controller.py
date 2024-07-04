@@ -8,17 +8,20 @@ from sentiment_analysis import OllamaChat
 from characteristic_clusterer import CharacteristicClusterer
 from graph_builder import GraphBuilder
 # sys.path.insert(1, os.path.join(sys.path[0], 'D:/УНИВЕР/практика/code/bot/utils'))
+from asyncio import Queue
 # import json_parser
 class Controller:
     def __init__(self):
         self.clusterer = CharacteristicClusterer()
         self.graph_builder = GraphBuilder()
-        self.chat = OllamaChat()
+        self.request_queue = Queue()
 
     async def get_video_info(self, video_url) -> dict:
         youtube_parser = YoutubeParser()
         return await youtube_parser.get_general_inf(video_url)
 
+    async def add_request_to_queue(self, characteristics, num_groups):
+        await self.request_queue.put((characteristics, num_groups))
     async def get_json_groups_from_chat(self, video_url, count_groups):
         #characteristics_str = self.chat.get_characteristics(video_url)
         #characteristics = json.loads(characteristics_str)
@@ -30,7 +33,8 @@ class Controller:
         return groups
 
     async def get_characteristics_from_chat(self, video_url):
-        characteristics_str = await self.chat.get_characteristics(video_url)
+        chat = OllamaChat()
+        characteristics_str = await chat.get_characteristics(video_url)
         characteristics = json.loads(characteristics_str)
         return characteristics
 
@@ -50,6 +54,8 @@ class Controller:
         new_json_groups = await self.find_group(json_groups, group_name)
         fig = await self.graph_builder.make_positive_bubble_plot(new_json_groups, video_info, 'green')
         return fig
+
+
 
     async def get_group_negative_bubble_graph(self, json_groups: dict, group_name: str,video_info: dict):
         new_json_groups = await self.find_group(json_groups, group_name)
@@ -76,12 +82,14 @@ class Controller:
         print(json_groups)
         return json_groups
 
-if __name__ == '__main__':
-     with open('bd_data.json', 'r', encoding='utf-8') as f:
-        bd_json = json.load(f)
-     controller = Controller()
-     groups = controller.get_json_groups_existed(bd_json, 3)
-     print(groups)
+
+
+# if __name__ == '__main__':
+#      with open('bd_data.json', 'r', encoding='utf-8') as f:
+#         bd_json = json.load(f)
+#      controller = Controller()
+#      groups = controller.get_json_groups_existed(bd_json, 3)
+#      print(groups)
      # print(controller.get_video_info("https://www.youtube.com/watch?v=EKrPIu4gQtc"))
      # groups = controller.get_json_groups_from_chat("https://www.youtube.com/watch?v=EKrPIu4gQtc", 3)
 #     # print(groups)

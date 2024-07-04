@@ -1,14 +1,16 @@
+import functools
 import json
 import sys
 import os
 import types
-
+import asyncio
+import concurrent.futures
 from aiogram import Router, F
 from aiogram.filters import CommandStart, Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton, message_id, CallbackQuery, InlineKeyboardButton, \
-    InputFile, FSInputFile, InlineKeyboardMarkup
+    InputFile, FSInputFile, InlineKeyboardMarkup, InputMediaPhoto
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 import io
 from PIL import Image
@@ -29,13 +31,33 @@ all_media_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'all_me
 
 router = Router()
 db_service = DatabaseService(config.DB_USER, config.DB_PASSWORD)
+
 controller = Controller()
 class Form(StatesGroup):
      groups = State()
      processing = State()
 
+from collections import deque
+
+# class RequestQueue:
+#    def __init__(self):
+#        self.queue = deque()
+#
+#    async def put(self, request):
+#        self.queue.append(request)
+#        await self.process_queue()
+#
+#    async def process_queue(self):
+#        while self.queue:
+#            characteristics, num_groups = self.queue.popleft()
+#            json_group = await controller.get_json_groups_existed(characteristics, num_groups)
+#            return json_group
+#
+# request_queue = RequestQueue()
+
 @router.message(Command("start"))
 async def start_handler(message: Message):
+    await db_service.create_engine()
     print("Start command received")
     user_id = message.from_user.id
     username = message.from_user.username
@@ -53,22 +75,23 @@ async def start_handler(message: Message):
 
 @router.message(F.text.regexp(r'https?://(?:www\.)?youtube\.com/watch\?v=\w+') & ~F.text.startswith('start'))
 async def message_handler(message: Message, state: FSMContext):
+    await db_service.create_engine()
     video_link = message.text
     message_id = message.message_id
     user_id = message.from_user.id
     chat_id = message.chat.id
-    request = db_service.get_request_by_url(video_link)
+    request = await db_service.get_request_by_url(video_link)
     await state.update_data(video_link=video_link)
     await state.update_data(url_message_id=message_id)
     await state.update_data(user_id=user_id)
     await state.update_data(chat_id=chat_id)
     video_info_json = await controller.get_video_info(video_url=video_link)
-    title, formatted_date_time, views, likes, comments = json_parser.parse_video_inf(video_info_json)
+    title, formatted_date_time, views, likes, comments = await json_parser.parse_video_inf(video_info_json)
     await state.update_data(video_info=video_info_json)
     if request is not None:
         builder = InlineKeyboardBuilder()
-        builder.row(InlineKeyboardButton(text="Построить анализ по характеристикам из БД (1 токен)", callback_data="get_from_db"))
-        builder.row(InlineKeyboardButton(text="Обновить характеристики и построить анализ (1 токен)", callback_data="get_video_info"))
+        builder.row(InlineKeyboardButton(text="Взять характеристики из хранилища (1 токен)", callback_data="get_from_db"))
+        builder.row(InlineKeyboardButton(text="Обновить характеристики (1 токен)", callback_data="get_video_info"))
         builder.row(InlineKeyboardButton(text="Отмена", callback_data="cancel"))
         msg = await message.answer(
             text.video_info_text.format(
@@ -89,23 +112,27 @@ async def message_handler(message: Message, state: FSMContext):
 
 @router.callback_query(F.data == "get_from_db")
 async def get_from_db_handler(callback_query: CallbackQuery, state: FSMContext):
+    await db_service.create_engine()
+    can_request = await db_service.can_request(callback_query.from_user.id)
+    if not can_request:
+        await callback_query.answer("Недостаточно токенов. Проверьте баланс в разделе \"Аккаунт\"")
+        return
     data = await state.get_data()
     video_link = data.get("video_link")
     request_msg = data["request_message"]
     await callback_query.message.edit_reply_markup(reply_markup=None)
     processing_msg = await callback_query.message.answer(
-        f"Идет обработка данных...:"
+        f"Идет обработка данных..."
     )
     try:
         await state.update_data(processing_msg_id=processing_msg.message_id)
-
         await state.set_state(Form.processing)
         request = Request()
-        request = db_service.get_request_by_url(video_link)
-        characteristics = json_parser.get_characteristics(request.characteristics)
+        request = await db_service.get_request_by_url(video_link)
+        characteristics = await json_parser.get_characteristics(request.characteristics)
         await state.update_data(characteristics=characteristics)
         await processing_msg.edit_text(
-            f"Выделено {len(characteristics)} характеристик, введите количество групп от 2 до {len(characteristics) - 1}"
+            f"Выделено {len(characteristics)} характеристик, введите количество групп от 2 до {int((len(characteristics))/2)}"
         )
         await state.set_state(Form.groups)
         await state.update_data(source="db")
@@ -118,6 +145,11 @@ async def get_from_db_handler(callback_query: CallbackQuery, state: FSMContext):
 
 @router.callback_query(F.data == "get_video_info")
 async def get_video_info(callback_query: CallbackQuery, state: FSMContext):
+    await db_service.create_engine()
+    can_request = await db_service.can_request(callback_query.from_user.id)
+    if not can_request:
+        await callback_query.answer("Недостаточно токенов. Проверьте баланс в разделе \"Аккаунт\"")
+        return
     data = await state.get_data()
     video_link = data.get("video_link")
     request_msg = data["request_message"]
@@ -133,7 +165,8 @@ async def get_video_info(callback_query: CallbackQuery, state: FSMContext):
         characteristics = await controller.get_characteristics_from_chat(video_link)
         await state.update_data(characteristics=characteristics)
         await processing_msg.edit_text(
-            f"Выделено {len(characteristics)} характеристик, введите количество групп от 2 до {len(characteristics) - 1}"
+            f"По вашему запросу выделено {len(characteristics)} характеристик. \nВведите количество групп, "
+            f"на которые хотите кластеризировать характеристики (значение от 2 до {int((len(characteristics))/2)})"
         )
         await state.set_state(Form.groups)
         await state.update_data(source="new")
@@ -145,35 +178,88 @@ async def get_video_info(callback_query: CallbackQuery, state: FSMContext):
     # await state.update_data(callback_query=callback_query)
     # controller.get_json_groups_from_chat()
 
-@router.callback_query(F.data == "get_group")
+@router.callback_query(F.data.startswith("get_group:"))
 async def get_group(callback_query: CallbackQuery, state: FSMContext):
     data = await state.get_data()
     json_group = data.get("json_group")
     video_info_json = data.get("video_info")
     user_id = data.get("user_id")
+    new_groups = data.get("new_groups")
     group_name = callback_query.data.split(":")[1]
+    try:
+        count_of_characteristics = await json_parser.get_count_characteristics_from_groups(json_group, group_name)
+        if count_of_characteristics >= 20:
+            await callback_query.message.delete()
+            await callback_query.message.answer("Строю новую диаграмму...")
+            characteristics = await json_parser.ungroup_characteristics_for_one_group(json_group, group_name)
+            new_groups = await controller.get_json_groups_existed(characteristics, 5)
+            await state.update_data(new_groups=new_groups)
+            if new_groups:
+                await process_new_groups(callback_query, new_groups, video_info_json, user_id, group_name)
+            else:
+                await process_group_without_new_groups(callback_query, json_group, group_name, video_info_json, user_id)
+        else:
+            await process_group_without_new_groups(callback_query, json_group, group_name, video_info_json, user_id)
+    except Exception as e:
+        await process_group_without_new_groups(callback_query, new_groups, group_name, video_info_json, user_id)
 
-    # Находим нужную группу в json_group
+async def process_new_groups(callback_query, new_groups, video_info_json, user_id, group_name):
+    graph_data = await controller.get_main_general_graph(new_groups, video_info_json)
+    if graph_data:
+        graph_data.write_image(
+            file=os.path.join(all_media_dir, f'graph_data_{user_id}.png'), width=2000,
+            height=800)
+        photo_file = FSInputFile(path=os.path.join(all_media_dir, f'graph_data_{user_id}.png'))
+        await callback_query.message.answer_photo(
+            photo=photo_file, caption=f"График для группы \"{group_name}\"",
+            reply_markup=await build_group_buttons(new_groups, True)
+        )
+    else:
+        await callback_query.message.answer("Ошибка при создании графика.")
+
+async def process_group_without_new_groups(callback_query, json_group, group_name, video_info_json, user_id):
     group = next((g for g in json_group["groups"] if g["group"] == group_name), None)
     if not group:
         await callback_query.answer("Ошибка: группа не найдена", show_alert=True)
         return
-
-    # Вызываем метод из контроллера для обработки группы
     graph_data = await controller.get_main_group_graph(json_group, group_name, video_info_json)
     graph_data.write_image(
-        file=os.path.join(all_media_dir, f'graph_bubble_negat_{user_id}.png'), width=1800,
+        file=os.path.join(all_media_dir, f'graph_main_group_{user_id}.png'), width=2000,
         height=800)
-    photo_file = FSInputFile(path=os.path.join(all_media_dir, f'graph_bubble_posit_{user_id}.png'))
-    await callback_query.answer_photo(photo=photo_file)
+    photo_file = FSInputFile(path=os.path.join(all_media_dir, f'graph_main_group_{user_id}.png'))
+    builder = InlineKeyboardBuilder()
+    builder.row(
+        InlineKeyboardButton(text="Назад к главному графику", callback_data="back_to_main"))
+    # Удаляем предыдущее сообщение
+    await callback_query.message.delete()
+    # Отправляем новое сообщение с графиком и клавиатурой
+    await callback_query.message.answer_photo(
+        photo=photo_file,
+        caption=f"График по группе {group_name}",
+        reply_markup=builder.as_markup()
+    )
 
-    # # Добавляем кнопку "Назад"
-    # keyboard = InlineKeyboardMarkup(row_width=1)
-    # back_button = InlineKeyboardButton("Назад", callback_data="back")
-    # keyboard.add(back_button)
-    # # Сохраняем название группы в state
-    # await state.update_data(current_group=group_name)
-
+@router.callback_query(F.data == "back_to_main")
+async def back_to_groups(callback_query: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    json_group = data.get("json_group")
+    video_info_json = data.get("video_info")
+    user_id = data.get("user_id")
+    graph_data = await controller.get_main_general_graph(json_group, video_info_json)
+    if graph_data:
+        graph_data.write_image(
+            file=os.path.join(all_media_dir, f'graph_data_{user_id}.png'), width=1800,
+            height=800)
+        photo_file = FSInputFile(path=os.path.join(all_media_dir, f'graph_data_{user_id}.png'))
+        # Удаляем предыдущее сообщение
+        await callback_query.message.delete()
+        # Отправляем новое сообщение с графиком
+        await callback_query.message.answer_photo(
+            photo=photo_file, caption="Общий график",
+            reply_markup=await build_group_buttons(json_group, False)
+        )
+    else:
+        await callback_query.message.answer("Ошибка при создании графика.")
 
 @router.message(Form.processing)
 async def processing_handler(message: Message, state: FSMContext):
@@ -189,17 +275,19 @@ async def cancel_handler(callback_query: CallbackQuery, state: FSMContext):
         f"Операция отменена")
 
 
+
+
 @router.message(Form.groups)
 async def groups_handler(message: Message, state: FSMContext):
     data = await state.get_data()
-    characteristics =  data.get("characteristics")
+    characteristics = data.get("characteristics")
     if not message.text.isdigit():
         await state.set_state(Form.groups)
-        await message.answer(f"Я вас не понял. Введите любое число от 2 до {(len(characteristics)-1)}")
+        await message.answer(f"Я вас не понял. Введите любое число от 2 до {int((len(characteristics))/2)}")
     else:
         num_groups = int(message.text)
         data = await state.get_data()
-        if num_groups >= 2 and num_groups <= (len(characteristics)-1):
+        if num_groups >= 2 and num_groups <= (((len(characteristics))/2)):
             await state.update_data(groups=num_groups)
             msg = await message.answer(f"Идет обработка для {num_groups} групп...")
             video_link = data.get("video_link")
@@ -209,18 +297,15 @@ async def groups_handler(message: Message, state: FSMContext):
             if message_id is None:
                 message_id = -1
             source = data.get("source")
-            if source == "db":
-                json_group = await controller.get_json_groups_existed(characteristics, num_groups)
-                await state.update_data(json_group=json_group)
-                db_characteristics = json_parser.add_count_group_to_characteristics(characteristics, num_groups)
-                db_service.add_request(user_id, video_link, video_info_json, message_id, db_characteristics, "ой")
-            elif source == "new":
-                json_group = await controller.get_json_groups_existed(characteristics, num_groups)
-                await state.update_data(json_group=json_group)
-                db_characteristics = json_parser.add_count_group_to_characteristics(characteristics, num_groups)
-                db_service.add_request(user_id, video_link, video_info_json, message_id, db_characteristics, "ой")
+                # json_group_c = await asyncio.to_thread(controller.get_json_groups_existed, characteristics, num_groups)
+                # json_group = await json_group_c
+            #json_group = await request_queue.put((characteristics, num_groups))
+            json_group = await controller.get_json_groups_existed(characteristics, num_groups)
+            db_characteristics = await json_parser.add_count_group_to_characteristics(characteristics, num_groups)
+            await db_service.add_request(user_id, video_link, video_info_json, message_id, db_characteristics, "ой")
+            await db_service.minus_token(user_id)
             if json_group:
-                groups = json_parser.parse_groups(json_group)
+                groups = await json_parser.parse_groups(json_group)
                 groups_text = "\n".join([f"Группа: {name}\nОписание: {description}\n" for name, description in groups])
                 builder = InlineKeyboardBuilder()
                 builder.row(
@@ -230,15 +315,16 @@ async def groups_handler(message: Message, state: FSMContext):
                     reply_markup=builder.as_markup(),
                 )
                 await state.update_data(request_message=msg)
+                await state.update_data(json_group=json_group)
                 await build_and_send_graphs(json_group, video_info_json, user_id, message)
             else:
                 await message.answer("Ошибка при получении данных.")
         else:
             await state.set_state(Form.groups)
-            await message.answer(f"Я вас не понял. Введите любое число от 3 до 50:")
+            await message.answer(f"Я вас не понял. Введите любое число от 2 до {int((len(characteristics))/2)}:")
+
 
 async def build_and_send_graphs(json_group, video_info_json, user_id, message):
-
     graph_data = await controller.get_main_general_graph(json_group, video_info_json)
     graph_bubble_posit = await controller.get_general_positive_bubble_graph(json_group, video_info_json)
     graph_bubble_negat = await controller.get_general_negative_bubble_graph(json_group, video_info_json)
@@ -257,27 +343,35 @@ async def build_and_send_graphs(json_group, video_info_json, user_id, message):
         photo_file = FSInputFile(path=os.path.join(all_media_dir, f'graph_bubble_negat_{user_id}.png'))
         await message.answer_photo(photo=photo_file)
         photo_file = FSInputFile(path=os.path.join(all_media_dir, f'graph_data_{user_id}.png'))
-        group_buttons = await build_group_buttons(json_group)
-        await message.answer_photo(photo=photo_file, reply_markup=group_buttons)
+        group_buttons = await build_group_buttons(json_group, False)
+        await message.answer_photo(photo=photo_file, caption="Общий график", reply_markup=group_buttons)
     else:
         await message.answer("Ошибка при создании графика.")
 
-async def build_group_buttons(json_group: dict) -> InlineKeyboardMarkup:
+async def build_group_buttons(json_group: dict, add_buttom: bool) -> InlineKeyboardMarkup:
     buttons = {}
     for group in json_group["groups"]:
-        button = InlineKeyboardButton(text=group["group"], callback_data=f"group:{group['group']}")
+        button = InlineKeyboardButton(text=group["group"], callback_data=f"get_group:{group['group']}")
         buttons[group["group"]] = button
+    if add_buttom:
+        back_button = InlineKeyboardButton(text="Назад к главному графику", callback_data="back_to_main")
+        buttons["back_to_main"] = back_button
     return InlineKeyboardMarkup(row_width=2, inline_keyboard=[[buttons[group]] for group in buttons])
+
 
 @router.callback_query(F.data == "add_to_favorites")
 async def add_to_favorites(callback_query: CallbackQuery, state: FSMContext):
-    # data = await state.get_data()
-    # json_group = data.get("json_group")
-    # video_info_json = data.get("video_info")
-    # user_id = data.get("user_id")
-    # video_link = data.get("video_link")
-    # request = Request()
-    # request = db_service.get_request_by_url(video_link)
-    # db_service.change_favourite(request.id, True)
-    await callback_query.answer("Группы успешно добавлены в избранное!")
+    await db_service.create_engine()
+    data = await state.get_data()
+    user_id = data.get("user_id")
+    video_link = data.get("video_link")
+    favourites = await db_service.get_favourite_requests(user_id)
+    countOfFavorites = len(favourites)
+    if(countOfFavorites < 5):
+        await db_service.change_last_request_favourite(user_id, video_link, True)
+        await callback_query.answer("Группы успешно добавлены в избранное!")
+    else:
+        await callback_query.answer("В избранном не может быть больше пяти анализов. Проверить это можно в разделе \"Избранное\".")
+
+
 

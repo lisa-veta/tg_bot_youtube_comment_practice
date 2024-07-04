@@ -44,7 +44,7 @@ class YoutubeParser:
         else:
             return None
 
-    async def get_video_comments(self, video_url):
+    async def get_video_comments(self, video_url) -> (list, int):
         video_id = self.get_video_code(video_url)
         comments = []
         youtube = build('youtube', 'v3', developerKey=self.YT_api_key)
@@ -75,7 +75,7 @@ class YoutubeParser:
                 ).execute()
             else:
                 break
-        return comments
+        return comments, comment_count
 
         #comment_count = self.get_comment_count(video_id)
         # if comment_count:
@@ -108,7 +108,7 @@ class YoutubeParser:
         if match:
             return match.group(1)
 #
-if __name__ == '__main__':
-    youtube_parser = YoutubeParser()
-    json = youtube_parser.get_general_inf("https://www.youtube.com/watch?v=GjkuE3Q18TQ&t=1s")
-    print(json)
+# if __name__ == '__main__':
+#     youtube_parser = YoutubeParser()
+#     json = youtube_parser.get_general_inf("https://www.youtube.com/watch?v=GjkuE3Q18TQ&t=1s")
+#     print(json)
