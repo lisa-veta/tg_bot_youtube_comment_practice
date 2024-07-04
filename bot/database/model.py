@@ -1,10 +1,11 @@
 #Модуль для работы с базой данных
 from sqlalchemy import DateTime, ForeignKey, String
+from sqlalchemy.ext.asyncio import AsyncAttrs
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.sql import func
 from sqlalchemy.dialects.postgresql import JSONB, TIMESTAMP, TEXT, BIGINT
 
-class Base(DeclarativeBase):
+class Base(AsyncAttrs, DeclarativeBase):
     pass
 
 class Role(Base):
