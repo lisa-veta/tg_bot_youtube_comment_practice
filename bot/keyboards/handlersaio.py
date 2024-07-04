@@ -31,6 +31,7 @@ all_media_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'all_me
 
 router = Router()
 db_service = DatabaseService(config.DB_USER, config.DB_PASSWORD)
+asyncio.run(db_service.create_engine())
 
 controller = Controller()
 class Form(StatesGroup):
