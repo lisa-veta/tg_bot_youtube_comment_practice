@@ -21,7 +21,7 @@ class DatabaseService():
         self.engine = create_async_engine("postgresql+asyncpg://" + "postgres" + ":" + "Xfq8ybR*" + "@localhost/practice")
 
     def create_db(self):
-        Base.metadata.create_all(self.engine)
+        Base.metadata.create_all(create_engine("postgresql+asyncpg://" + "postgres" + ":" + "Xfq8ybR*" + "@localhost/practice"))
 
     async def add_roles(self):
         async with AsyncSession(self.engine) as session:
