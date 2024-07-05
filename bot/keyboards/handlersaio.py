@@ -1,3 +1,4 @@
+import functools
 import json
 import sys
 import os
@@ -16,14 +17,14 @@ from PIL import Image
 
 import text
 import config
-sys.path.insert(1, os.path.join(sys.path[0], 'C:/Users/Королева/PycharmProjects/tg_youtube_analytics/bot/database'))
+sys.path.insert(1, os.path.join(sys.path[0], 'D:/УНИВЕР/практика/проба/code/bot/database'))
 from model import Request
 
-sys.path.insert(1, os.path.join(sys.path[0], 'C:/Users/Королева/PycharmProjects/tg_youtube_analytics/bot/database'))
+sys.path.insert(1, os.path.join(sys.path[0], 'D:/УНИВЕР/практика/проба/code/bot/database'))
 from db_service import DatabaseService
-sys.path.insert(1, os.path.join(sys.path[0], 'C:/Users/Королева/PycharmProjects/tg_youtube_analytics/bot/services'))
+sys.path.insert(1, os.path.join(sys.path[0], 'D:/УНИВЕР/практика/проба/code/bot/services'))
 from controller import Controller
-sys.path.insert(1, os.path.join(sys.path[0], 'C:/Users/Королева/PycharmProjects/tg_youtube_analytics/bot/utils'))
+sys.path.insert(1, os.path.join(sys.path[0], 'D:/УНИВЕР/практика/проба/code/bot/utils'))
 import json_parser
 all_media_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'all_media')
 

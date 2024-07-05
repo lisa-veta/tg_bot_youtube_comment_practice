@@ -5,8 +5,6 @@ import pandas as pd
 import requests.compat
 from sqlalchemy import create_engine, select, Result, ScalarResult
 
-
-# from bot.database.model import Request
 from model import *
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
@@ -29,25 +27,19 @@ class DatabaseService():
         except Exception as e:
             print(f"Error creating engine: {e}")
 
-    # async def create_db(self):
-    #     try:
-    #         Base.metadata.create_all(self.engine)
-    #         print("Tables created successfully.")
-    #     except Exception as e:
-    #         print(f"Error creating tables: {e}")
-    # def create_sync_engine(self):
-    #     # Создаем синхронный движок
-    #     sync_engine = create_engine("postgresql+psycopg2://" + self.user + ":" + self.password + "@localhost/practice")
-    #     return sync_engine
-    #
-    # def create_db(self):
-    #     try:
-    #         # Используем синхронный движок для создания таблиц
-    #         sync_engine = self.create_sync_engine()
-    #         Base.metadata.create_all(sync_engine)
-    #         print("Tables created successfully.")
-    #     except Exception as e:
-    #         print(f"Error creating tables: {e}")
+    def create_sync_engine(self):
+        # Создаем синхронный движок
+        sync_engine = create_engine("postgresql+psycopg2://" + self.user + ":" + self.password + "@localhost/practice")
+        return sync_engine
+
+    async def create_db(self):
+        async with self.engine.begin() as conn:
+            try:
+                await conn.run_sync(Base.metadata.drop_all)
+                await conn.run_sync(Base.metadata.create_all)
+            except Exception as e:
+                print(f"Error creating tables: {e}")
+
     async def add_roles(self):
         async with AsyncSession(self.engine) as session:
             user = Role(role_name="user")
@@ -125,7 +117,8 @@ class DatabaseService():
 
     async def get_users(self) -> list[User]:
         async with AsyncSession(self.engine) as session:
-            users = await session.query(User).all()
+            users = await session.execute(select(User))
+            users = list(users.scalars().all())
             return users
 
     async def get_request(self, request_id: int) -> Request:
@@ -276,17 +269,15 @@ class DatabaseService():
 #
 #     db_service = DatabaseService(user=user, password=password)
 #
-#     # # Создаем синхронный движок и таблицы
-#     # db_service.create_db()
+#     # Создаем синхронный движок и таблицы
+#     db_service.create_db()
 #
 #     # Создаем асинхронный движок для дальнейших операций
 #     await db_service.create_engine()
 #     await db_service.add_roles()
-#     await db_service.change_favourite_flag(3942, False)
-#     print(await db_service.get_user_favourite_by_m_id(938091580, 3942))
-
-#if __name__ == '__main__':
- #   asyncio.run(main())
+#
+# if __name__ == '__main__':
+#     asyncio.run(main())
 
 
 # Создание базы данных (синхронный вызов)
