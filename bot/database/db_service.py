@@ -5,8 +5,6 @@ import pandas as pd
 import requests.compat
 from sqlalchemy import create_engine, select, Result, ScalarResult
 
-
-# from bot.database.model import Request
 from model import *
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
@@ -23,31 +21,26 @@ class DatabaseService():
         )
 
     async def create_engine(self):
+        self.engine = create_async_engine("postgresql+asyncpg://" + self.user + ":" + self.password + "@localhost/practice")
         try:
             self.engine = create_async_engine(
                 "postgresql+asyncpg://" + self.user + ":" + self.password + "@localhost/practice")
         except Exception as e:
             print(f"Error creating engine: {e}")
 
-    async def create_db(self):
-        try:
-            Base.metadata.create_all(self.engine)
-            print("Tables created successfully.")
-        except Exception as e:
-            print(f"Error creating tables: {e}")
     def create_sync_engine(self):
         # Создаем синхронный движок
         sync_engine = create_engine("postgresql+psycopg2://" + self.user + ":" + self.password + "@localhost/practice")
         return sync_engine
 
-    def create_db(self):
-        try:
-            # Используем синхронный движок для создания таблиц
-            sync_engine = self.create_sync_engine()
-            Base.metadata.create_all(sync_engine)
-            print("Tables created successfully.")
-        except Exception as e:
-            print(f"Error creating tables: {e}")
+    async def create_db(self):
+        async with self.engine.begin() as conn:
+            try:
+                await conn.run_sync(Base.metadata.drop_all)
+                await conn.run_sync(Base.metadata.create_all)
+            except Exception as e:
+                print(f"Error creating tables: {e}")
+
     async def add_roles(self):
         async with AsyncSession(self.engine) as session:
             user = Role(role_name="user")
@@ -125,7 +118,8 @@ class DatabaseService():
 
     async def get_users(self) -> list[User]:
         async with AsyncSession(self.engine) as session:
-            users = await session.query(User).all()
+            users = await session.execute(select(User))
+            users = list(users.scalars().all())
             return users
 
     async def get_request(self, request_id: int) -> Request:
