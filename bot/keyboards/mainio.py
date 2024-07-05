@@ -9,7 +9,7 @@ from aiogram.filters.command import Command
 from aiogram.fsm.storage.memory import MemoryStorage
 import config
 from handlersaio import router
-sys.path.insert(1, os.path.join(sys.path[0], 'D:/УНИВЕР/практика/проба/code/bot/database'))
+sys.path.insert(1, os.path.join(sys.path[0], 'C:/Users/Королева/PycharmProjects/tg_youtube_analytics/bot/database'))
 from db_service import DatabaseService
 
 db_service = None

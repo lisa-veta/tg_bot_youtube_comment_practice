@@ -29,25 +29,25 @@ class DatabaseService():
         except Exception as e:
             print(f"Error creating engine: {e}")
 
-    async def create_db(self):
-        try:
-            Base.metadata.create_all(self.engine)
-            print("Tables created successfully.")
-        except Exception as e:
-            print(f"Error creating tables: {e}")
-    def create_sync_engine(self):
-        # Создаем синхронный движок
-        sync_engine = create_engine("postgresql+psycopg2://" + self.user + ":" + self.password + "@localhost/practice")
-        return sync_engine
-
-    def create_db(self):
-        try:
-            # Используем синхронный движок для создания таблиц
-            sync_engine = self.create_sync_engine()
-            Base.metadata.create_all(sync_engine)
-            print("Tables created successfully.")
-        except Exception as e:
-            print(f"Error creating tables: {e}")
+    # async def create_db(self):
+    #     try:
+    #         Base.metadata.create_all(self.engine)
+    #         print("Tables created successfully.")
+    #     except Exception as e:
+    #         print(f"Error creating tables: {e}")
+    # def create_sync_engine(self):
+    #     # Создаем синхронный движок
+    #     sync_engine = create_engine("postgresql+psycopg2://" + self.user + ":" + self.password + "@localhost/practice")
+    #     return sync_engine
+    #
+    # def create_db(self):
+    #     try:
+    #         # Используем синхронный движок для создания таблиц
+    #         sync_engine = self.create_sync_engine()
+    #         Base.metadata.create_all(sync_engine)
+    #         print("Tables created successfully.")
+    #     except Exception as e:
+    #         print(f"Error creating tables: {e}")
     async def add_roles(self):
         async with AsyncSession(self.engine) as session:
             user = Role(role_name="user")
@@ -160,25 +160,24 @@ class DatabaseService():
 
     async def get_user_favourites(self, user_id: int) -> list[Request]:
         async with AsyncSession(self.engine) as session:
-            requests = await session.execute((select(Request).where(Request.user_id == user_id
-                                                                    and Request.is_favourite == True).order_by(Request.datetime.desc())).limit(5))
+            requests = await session.execute((select(Request).where(Request.user_id == user_id,
+                                                                                      Request.is_favourite).order_by(Request.datetime.desc())).limit(5))
             requests = list(requests.scalars().all())
             return requests
     async def get_user_favourite_by_m_id(self, user_id: int, message_id) -> list[Request]:
         async with AsyncSession(self.engine) as session:
-            requests = await session.execute((select(Request.video_information).where(Request.message_id == message_id)))
+            requests = await session.execute((select(Request.video_information).where(Request.message_id == message_id,
+                                                                                      Request.is_favourite)))
             requests = list(requests.scalars().all())
             return requests
 
     #добавила по айди
     async def get_favourite_requests(self, user_id) -> list[Request]:
-        async with self.SessionLocal() as session:
-            async with session.begin():
-                result = await session.execute(
-                    select(Request).where(Request.is_favourite == True).where(Request.user_id == user_id)
-                )
-                requests = result.scalars().all()
-                return requests
+        async with AsyncSession(self.engine) as session:
+            result = await session.execute(
+                select(Request).where(Request.is_favourite, Request.user_id == user_id))
+            requests = result.scalars().all()
+            return requests
 
     async def get_token_request(self, token_request_id) -> TokenRequest:
         async with AsyncSession(self.engine) as session:
@@ -235,20 +234,15 @@ class DatabaseService():
 
     async def change_last_request_favourite(self, user_id: int, video_url: str, is_favourite: bool):
         async with Session(self.engine) as session:
-            request = request = await session.query(Request).filter(Request.user_id == user_id).filter(
-                Request.video_url == video_url).order_by(Request.datetime.desc()).first()
-            request.is_favourite = is_favourite
-            await session.commit()
-    async def change_favourite(self, request_id: int, is_favourite: bool):
-        async with Session(self.engine) as session:
-            request = await session.get(Request, request_id)
+            request = request = await session.execute(select(Request).where(Request.user_id == user_id,
+                Request.video_url == video_url).order_by(Request.datetime.desc()).one())
             request.is_favourite = is_favourite
             await session.commit()
 
     async def change_favourite_flag(self, message_id: int, is_favourite: bool):
         async with AsyncSession(self.engine) as session:
             request = await session.execute(select(Request).where(Request.message_id == message_id))
-            request = request.scalars().first()
+            request = request.scalars().one()
             request.is_favourite = is_favourite
             await session.commit()
 
@@ -282,15 +276,17 @@ class DatabaseService():
 #
 #     db_service = DatabaseService(user=user, password=password)
 #
-#     # Создаем синхронный движок и таблицы
-#     db_service.create_db()
+#     # # Создаем синхронный движок и таблицы
+#     # db_service.create_db()
 #
 #     # Создаем асинхронный движок для дальнейших операций
 #     await db_service.create_engine()
 #     await db_service.add_roles()
-#
-# if __name__ == '__main__':
-#     asyncio.run(main())
+#     await db_service.change_favourite_flag(3942, False)
+#     print(await db_service.get_user_favourite_by_m_id(938091580, 3942))
+
+#if __name__ == '__main__':
+ #   asyncio.run(main())
 
 
 # Создание базы данных (синхронный вызов)
