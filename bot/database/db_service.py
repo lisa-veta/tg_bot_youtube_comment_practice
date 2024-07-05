@@ -1,8 +1,12 @@
 import json
-from typing import Optional
+from typing import Optional, Tuple, Sequence, List
 import asyncio
 import pandas as pd
-from sqlalchemy import create_engine, select
+import requests.compat
+from sqlalchemy import create_engine, select, Result, ScalarResult
+
+
+# from bot.database.model import Request
 from model import *
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
@@ -17,18 +21,39 @@ class DatabaseService():
         self.SessionLocal = sessionmaker(
             autocommit=False, autoflush=False, bind=self.engine, class_=AsyncSession
         )
+
     async def create_engine(self):
-        self.engine = create_async_engine("postgresql+asyncpg://" + "postgres" + ":" + "Xfq8ybR*" + "@localhost/practice")
+        try:
+            self.engine = create_async_engine(
+                "postgresql+asyncpg://" + self.user + ":" + self.password + "@localhost/practice")
+        except Exception as e:
+            print(f"Error creating engine: {e}")
+
+    async def create_db(self):
+        try:
+            Base.metadata.create_all(self.engine)
+            print("Tables created successfully.")
+        except Exception as e:
+            print(f"Error creating tables: {e}")
+    def create_sync_engine(self):
+        # Создаем синхронный движок
+        sync_engine = create_engine("postgresql+psycopg2://" + self.user + ":" + self.password + "@localhost/practice")
+        return sync_engine
 
     def create_db(self):
-        Base.metadata.create_all(create_engine("postgresql+asyncpg://" + "postgres" + ":" + "Xfq8ybR*" + "@localhost/practice"))
-
+        try:
+            # Используем синхронный движок для создания таблиц
+            sync_engine = self.create_sync_engine()
+            Base.metadata.create_all(sync_engine)
+            print("Tables created successfully.")
+        except Exception as e:
+            print(f"Error creating tables: {e}")
     async def add_roles(self):
         async with AsyncSession(self.engine) as session:
             user = Role(role_name="user")
             admin = Role(role_name="admin")
             banned = Role(role_name="banned")
-            await session.add_all([user, admin, banned])
+            session.add_all([user, admin, banned])
             await session.commit()
 
     async def add_user(self, user_id: int, username: str, role: str, token_balance=5):
@@ -126,6 +151,24 @@ class DatabaseService():
         async with AsyncSession(self.engine) as session:
             requests = await session.query(Request).all()
             return requests
+    async def get_request_by_id_20(self, user_id: int) -> list[Request]:
+        async with AsyncSession(self.engine) as session:
+            requests = await session.execute(select(Request).where(Request.user_id == user_id).order_by(Request.datetime.desc()).limit(20))
+            requests = list(requests.scalars().all())
+            return requests
+            # return [list(row) for row in requests]
+
+    async def get_user_favourites(self, user_id: int) -> list[Request]:
+        async with AsyncSession(self.engine) as session:
+            requests = await session.execute((select(Request).where(Request.user_id == user_id
+                                                                    and Request.is_favourite == True).order_by(Request.datetime.desc())).limit(5))
+            requests = list(requests.scalars().all())
+            return requests
+    async def get_user_favourite_by_m_id(self, user_id: int, message_id) -> list[Request]:
+        async with AsyncSession(self.engine) as session:
+            requests = await session.execute((select(Request.video_information).where(Request.message_id == message_id)))
+            requests = list(requests.scalars().all())
+            return requests
 
     #добавила по айди
     async def get_favourite_requests(self, user_id) -> list[Request]:
@@ -202,6 +245,13 @@ class DatabaseService():
             request.is_favourite = is_favourite
             await session.commit()
 
+    async def change_favourite_flag(self, message_id: int, is_favourite: bool):
+        async with AsyncSession(self.engine) as session:
+            request = await session.execute(select(Request).where(Request.message_id == message_id))
+            request = request.scalars().first()
+            request.is_favourite = is_favourite
+            await session.commit()
+
     async def delete_user(self, user_id: int):
         async with Session(self.engine) as session:
             user = await session.get(User, user_id)
@@ -226,15 +276,36 @@ class DatabaseService():
 
 
 
-# service = DatabaseService("root", "123")
-# rec = Request()
+# async def main():
+#     user = 'postgres'
+#     password = '20i16t04s'
+#
+#     db_service = DatabaseService(user=user, password=password)
+#
+#     # Создаем синхронный движок и таблицы
+#     db_service.create_db()
+#
+#     # Создаем асинхронный движок для дальнейших операций
+#     await db_service.create_engine()
+#     await db_service.add_roles()
+#
+# if __name__ == '__main__':
+#     asyncio.run(main())
+
+
+# Создание базы данных (синхронный вызов)
+# db_service.create_db()
+
+
+
+    # rec = Request()
 # rec = service.get_request_by_url("https://www.youtube.com/watch?v=nIkH6C3_CX8")
 # print(rec.characteristics["characteristics"])
-
+#
 # service.create_db()
-#service.add_user("fazylov_v", "admin", 100)
-#service.add_user("chel", "banned", 0)
-#print(service.get_user_by_id(1).__repr__())
-#print(service.get_request_by_user_id(1))
-#print(service.get_user(1))
+# service.add_user("fazylov_v", "admin", 100)
+# service.add_user("chel", "banned", 0)
+# print(service.get_user_by_id(1).__repr__())
+# print(service.get_request_by_user_id(1))
+# print(service.get_user(1))
 
