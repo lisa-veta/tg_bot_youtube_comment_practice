@@ -65,11 +65,14 @@ async def start_handler(message: Message):
     if not await db_service.get_user(user_id):
         await db_service.add_user(user_id, username, 'user')
     user = await db_service.get_user(user_id)
+    kb = [[KeyboardButton(text='История\U0001F4D6'),
+           KeyboardButton(text='Избранное\U00002763'),
+           KeyboardButton(text='Аккаунт\U0001F921'),
+           KeyboardButton(text='Навигация\U0001F5FA')]]
     if user.role_id == 1:
-        kb = [[KeyboardButton(text='История\U0001F4D6'),
-              KeyboardButton(text='Избранное\U00002763'),
-              KeyboardButton(text='Аккаунт\U0001F921'),
-              KeyboardButton(text='Навигация\U0001F5FA')]]
+        user_keyboard = ReplyKeyboardMarkup(keyboard=kb, resize_keyboard=True)
+    elif user.role_id == 2:
+        kb.append(KeyboardButton(text='Админ\U0001F6AA'))
         user_keyboard = ReplyKeyboardMarkup(keyboard=kb, resize_keyboard=True)
     await message.answer(f"Добро пожаловать {username}! Если хочешь получить анализ комментариев, скинь ссылку на видео YouTube!", reply_markup=user_keyboard)
 
