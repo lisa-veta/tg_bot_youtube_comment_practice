@@ -1,18 +1,25 @@
 import calendar
+import os
+import sys
+import tracemalloc
 
+import asyncio
+
+tracemalloc.start()
 import pandas as pd
 import plotly.graph_objects as go
 from datetime import datetime, timedelta
 import datetime
+sys.path.insert(1, os.path.join(sys.path[0], 'C:/Users/Королева/PycharmProjects/tg_youtube_analytics/bot/database'))
 from bot.database.db_service import DatabaseService
-from bot.database.model import User
-class Admin:
-    def __init__(self):
-        self.bd = DatabaseService("postgres", "Xfq8ybR*")
 
-    def plot_user_activity(self, user_id: int):
-        df = self.bd.get_user_requests(user_id)
-        user = self.bd.get_user(user_id)
+class Admin:
+    def __init__(self, bd: DatabaseService):
+        self.bd = bd
+
+    async def plot_user_activity(self, user_id: int):
+        df = await self.bd.get_user_requests(user_id)
+        user = await self.bd.get_user(user_id)
 
         df['request_date'] = pd.to_datetime(df['request_date'])
 
@@ -53,8 +60,8 @@ class Admin:
         #fig.show()
         return fig
 
-    def plot_new_users(self, period: str = 'week'): #period: 'week', 'day', 'month'
-        users = self.bd.get_users()
+    async def plot_new_users(self, period: str = 'week'): #period: 'week', 'day', 'month'
+        users = await self.bd.get_users()
 
         today = datetime.date.today()
         if period == 'week':
@@ -76,7 +83,7 @@ class Admin:
 
         registrations_count = {}
         for user in users:
-            registration_date = user.data_registration.date()
+            registration_date = user.date_registration.date()
             if last_week_start <= registration_date <= last_week_end:
                 if registration_date in registrations_count:
                     registrations_count[registration_date] += 1
@@ -110,12 +117,12 @@ class Admin:
         # fig.show()
         return fig
 
-    def get_bd_statistics(self):
-        users = self.bd.get_users()
+    async def get_bd_statistics(self):
+        users = await self.bd.get_users()
         regular_users = [user for user in users if user.role_id == 1]
         admins = [user for user in users if user.role_id == 2]
         banned_users = [user for user in users if user.role_id == 3]
-        requests = self.bd.get_requests()
+        requests = await self.bd.get_requests()
         return (f"Сводка по объему данных:\n"
                 f"Количество запросов : {len(requests)}\n"
                 f"Количество пользователей : {len(users)}\n"
@@ -124,12 +131,21 @@ class Admin:
                 f"\tЗаблокированных: {len(banned_users)}\n"
                 f"\tАдминистраторов : {len(admins)}\n")
 
+        filename = f"registration_activity_{period}.png"
+        fig.write_image(filename)
 
+        return filename
 
-if __name__ == "__main__":
-    admin = Admin()
-    #admin.plot_user_activity(1)
-    #admin.plot_new_users(period='week')
-    print(admin.get_bd_statistics())
+# async def main():
+#     db = DatabaseService('postgres', '20i16t04s')
+#     await db.create_engine()
+#     admin = Admin(db)
+#     #admin.plot_user_activity(1)
+#     #admin.plot_new_users(period='week')
+#     # await admin.plot_new_users('day')
+#     print(await admin.plot_user_activity(938091580))
+#
+# if __name__ == "__main__":
+#     asyncio.run(main())
 
 
