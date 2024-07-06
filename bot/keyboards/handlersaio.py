@@ -16,14 +16,14 @@ import io
 from PIL import Image
 import text
 import config
-sys.path.insert(1, os.path.join(sys.path[0], 'D:/УНИВЕР/практика/проба/code/bot/database'))
+sys.path.insert(1, os.path.join(sys.path[0], 'C:/Users/Королева/PycharmProjects/tg_youtube_analytics/bot/database'))
 from model import Request
 
-sys.path.insert(1, os.path.join(sys.path[0], 'D:/УНИВЕР/практика/проба/code/bot/database'))
+sys.path.insert(1, os.path.join(sys.path[0], 'C:/Users/Королева/PycharmProjects/tg_youtube_analytics/bot/database'))
 from db_service import DatabaseService
-sys.path.insert(1, os.path.join(sys.path[0], 'D:/УНИВЕР/практика/проба/code/bot/services'))
+sys.path.insert(1, os.path.join(sys.path[0], 'C:/Users/Королева/PycharmProjects/tg_youtube_analytics/bot/services'))
 from controller import Controller
-sys.path.insert(1, os.path.join(sys.path[0], 'D:/УНИВЕР/практика/проба/code/bot/utils'))
+sys.path.insert(1, os.path.join(sys.path[0], 'C:/Users/Королева/PycharmProjects/tg_youtube_analytics/bot/utils'))
 import json_parser
 all_media_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'all_media')
 
@@ -120,22 +120,48 @@ async def goto_favoutite_menu(message: Message, state: FSMContext):
         await message.answer("Вы еще не добавили ни одного видео в избранное")
 
 
-# @router.message(F.text == 'Аккаунт\U0001F9DA')
-# async def goto_favoutite_menu(message: Message, state: FSMContext):
-#     await db_service.create_engine()
-#     user_id = message.from_user.id
-#     favourites = await db_service.get_user_favourites(user_id)
-#     if len(favourites) != 0:
-#         video_in_favourite_button = InlineKeyboardBuilder()
-#         favourite_videos_m_id = []
-#         for video in favourites:
-#             video_in_favourite_button.row(InlineKeyboardButton(text=str(video.video_information['title']), callback_data='favourite_' + str(video.message_id)))
-#             favourite_videos_m_id.append(video.message_id)
-#         await state.update_data(favourites_video_m_id=favourite_videos_m_id)
-#         msg = await message.answer("Видео, которые вы добавили в избранное:", reply_markup=video_in_favourite_button.as_markup())
-#         await state.update_data(favs_msg_id=message.message_id)
-#     else:
-#         await message.answer("Вы еще не добавили ни одного видео в избранное")
+@router.message(F.text == 'Аккаунт\U0001F9DA')
+async def goto_favoutite_menu(message: Message, state: FSMContext):
+    await db_service.create_engine()
+    user_id = message.from_user.id
+    user = await db_service.get_user(user_id)
+    keyboard = InlineKeyboardBuilder()
+    keyboard.row(InlineKeyboardButton(text="Купить токены",callback_data="buy_token"))
+    await message.answer(text.account_text.format(user.token_balance, user.date_registration),
+                         reply_markup=keyboard.as_markup())
+@router.callback_query(F.data == 'buy_token')
+async def buy_token(callback_query: CallbackQuery, state: FSMContext):
+    keyboard = InlineKeyboardBuilder()
+    keyboard.row(InlineKeyboardButton(text="5",callback_data="buy_token_5"),
+                 InlineKeyboardButton(text="7", callback_data="buy_token_7"),
+                 InlineKeyboardButton(text="10", callback_data="buy_token_10"))
+    keyboard.row(InlineKeyboardButton(text="<< Назад", callback_data="back_to_ac"))
+    msg = await callback_query.message.edit_text("Сколько токенов запросить?", reply_markup=keyboard.as_markup())
+    await state.update_data(ac_msg_id=msg.message_id)
+@router.callback_query(F.data.startswith('buy_token_'))
+async def request_token(callback_query: CallbackQuery, state: FSMContext):
+    await db_service.create_engine()
+    user_id = callback_query.from_user.id
+    token_request = int(callback_query.data[10:])
+    try:
+        await db_service.add_token_request(user_id, token_request)
+        await callback_query.message.edit_text(
+            f"Ваш запрос на {token_request} токенов отправлен на рассмотрение к администратору."
+        )
+    except Exception as e:
+        await callback_query.answer(f"Ошибка: {e}", show_alert=True)
+@router.callback_query(F.data == "back_to_ac")
+async def back_to_ac(callback_query: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    msg = data["ac_msg_id"]
+    await callback_query.bot.delete_message(chat_id=callback_query.message.chat.id, message_id=msg)
+    await db_service.create_engine()
+    user_id = callback_query.from_user.id
+    user = await db_service.get_user(user_id)
+    keyboard = InlineKeyboardBuilder()
+    keyboard.row(InlineKeyboardButton(text="Купить токены", callback_data="buy_token"))
+    await callback_query.message.answer(text.account_text.format(user.role_id, user.token_balance, user.date_registration),
+                         reply_markup=keyboard.as_markup())
 
 @router.message(
     (F.text.regexp(r'https?://(?:www\.)?youtube\.com/watch\?v=\w+') |
@@ -175,8 +201,6 @@ async def message_handler(message: Message, state: FSMContext):
         msg = await message.answer(text.video_info_text.format(title, formatted_date_time, likes, comments, views),
                                    reply_markup=builder.as_markup())
         await state.update_data(request_message=msg)
-
-
 
 @router.callback_query(F.data == "get_from_db")
 async def get_from_db_handler(callback_query: CallbackQuery, state: FSMContext):
