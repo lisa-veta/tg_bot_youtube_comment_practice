@@ -37,7 +37,7 @@ class CharacteristicClusterer:
             characteristics_text = [char['characteristic'] for char in group_characteristics]
             group_name_str = await chat.get_group_name(characteristics_text)
             group_name = json.loads(group_name_str)["group"]
-            while(len(group_name) > 32):
+            while(len(group_name) > 26):
                 group_name_str = await chat.get_group_name(characteristics_text)
                 group_name = json.loads(group_name_str)["group"]
             group_description = json.loads(group_name_str)["description"]

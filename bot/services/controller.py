@@ -26,16 +26,20 @@ class Controller:
         #characteristics_str = self.chat.get_characteristics(video_url)
         #characteristics = json.loads(characteristics_str)
         #print(characteristics)
-        with open('D:/УНИВЕР/практика/проба/code/bot/services/char.json', 'r', encoding='utf-8') as f:
-            characteristics = json.load(f)
-        print(characteristics)
-        groups = await self.clusterer.group_characteristics(characteristics, count_groups)
+
+        # print(characteristics)
+        # groups = await self.clusterer.group_characteristics(characteristics, count_groups)
+        with open('D:/УНИВЕР/2 курс/практика/json/group.json', 'r', encoding='utf-8') as f:
+            groups = json.load(f)
         return groups
 
-    async def get_characteristics_from_chat(self, video_url):
+    async def get_characteristics_from_chat(self, video_url, parts):
         chat = OllamaChat()
-        characteristics_str = await chat.get_characteristics(video_url)
-        characteristics = json.loads(characteristics_str)
+        #characteristics_str = await chat.get_characteristics(video_url)
+        with open('D:/УНИВЕР/практика/проба/code/bot/services/sport_char.json', 'r', encoding='utf-8') as f:
+            characteristics = json.load(f)
+        # characteristics_str = await chat.get_characteristics_by_chunked_comments(video_url, parts)
+        # characteristics = json.loads(characteristics_str)
         return characteristics
 
     async def get_json_groups_existed(self, characteristics, count_groups):
@@ -46,6 +50,15 @@ class Controller:
         return bd_data["characteristics"]
     async def get_general_positive_bubble_graph(self, json_groups: dict,  video_info: dict):
         fig = await self.graph_builder.make_positive_bubble_plot(json_groups, video_info)
+        return fig
+
+
+    async def get_general_positive_bubble_plot_3d(self, json_groups: dict,  video_info: dict):
+        fig = await self.graph_builder.make_positive_bubble_plot_3d(json_groups, video_info)
+        return fig
+
+    async def get_general_negative_bubble_plot_3d(self, json_groups: dict,  video_info: dict):
+        fig = await self.graph_builder.make_negative_bubble_plot_3d(json_groups, video_info)
         return fig
     async def get_general_negative_bubble_graph(self, json_groups: dict,  video_info: dict):
         fig = await self.graph_builder.make_negative_bubble_plot(json_groups, video_info)

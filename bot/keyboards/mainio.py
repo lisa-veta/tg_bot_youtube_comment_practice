@@ -18,7 +18,7 @@ async def main():
     db_service = DatabaseService(config.DB_USER, config.DB_PASSWORD)
     await db_service.create_engine()
     bot = Bot(token=config.BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
-    dp = Dispatcher(storage=MemoryStorage(), timeout=20000)
+    dp = Dispatcher(storage=MemoryStorage(), timeout=18000000)
     dp.include_router(router)
     await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())

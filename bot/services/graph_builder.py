@@ -1,4 +1,4 @@
-
+import asyncio
 import datetime
 import plotly.express as px
 from sklearn.decomposition import PCA
@@ -12,6 +12,7 @@ class GraphBuilder:
 
 
     async def make_positive_bubble_plot(self, group_characteristics, video_inf, color=None):
+        print("строю make_positive_bubble_plot")
         groups = group_characteristics['groups']
         data = []
         all_embeddings = [await self.CharacteristicClusterer.get_embedding(char['characteristic']) for group in groups for
@@ -46,7 +47,7 @@ class GraphBuilder:
         if color is None:
             commentCount = video_inf['commentCount']
         formatted_date_time = self.parse_date_time(video_inf['published_at'])
-        fig.update_layout(title=f'Группы характеристик с позитивными комментариями для видео "{video_inf["title"]}"',
+        fig.update_layout(title=f'Группы характеристик с положительными комментариями для видео "{video_inf["title"]}"',
                           legend_title=f"Дата публикации: {formatted_date_time}<br>"
                                        f"Количество просмотров: {video_inf['viewCount']}<br>"
                                        f"Количество лайков: {video_inf['likeCount']}<br>"
@@ -55,6 +56,7 @@ class GraphBuilder:
         return fig
 
     async def make_negative_bubble_plot(self, group_characteristics, video_inf, color = None):
+        print("строю make_negative_bubble_plot")
         groups = group_characteristics['groups']
         data = []
         all_embeddings = [await self.CharacteristicClusterer.get_embedding(char['characteristic']) for group in groups for char in
@@ -95,7 +97,119 @@ class GraphBuilder:
         fig.update_traces(marker=dict(line=dict(width=2, color='White')))
         return fig
 
+    async def make_positive_bubble_plot_3d(self, group_characteristics, video_inf, color=None):
+        print("строю make_positive_bubble_plot_3d")
+        groups = group_characteristics['groups']
+        data = []
+        all_embeddings = [await self.CharacteristicClusterer.get_embedding(char['characteristic']) for group in groups
+                          for
+                          char in
+                          group['characteristics']]
+
+        # Handle cases with one or two characteristics
+        if len(all_embeddings) == 1:
+            vectors_3d = [[0, 0, all_embeddings[0][0]]]  # Generate Z coordinate
+        elif len(all_embeddings) == 2:
+            vectors_3d = [[0, emb[0], emb[1]] for emb in all_embeddings]  # Generate Z coordinate as 0
+        else:
+            pca = PCA(n_components=3)
+            vectors_3d = pca.fit_transform(all_embeddings)
+
+        index = 0
+        commentCount = 0
+        for i, group in enumerate(groups):
+            for j, characteristic in enumerate(group['characteristics']):
+                hover_text = ('{characteristic}<br>' +
+                              'Количество положительных комментариев: {count}').format(
+                    characteristic=characteristic['characteristic'],
+                    count=characteristic['countOfPositiveComments'])
+                commentCount += characteristic['countOfPositiveComments']
+                x = vectors_3d[index][0]
+                y = vectors_3d[index][1]
+                z = vectors_3d[index][2]
+                data.append({
+                    'x': x,
+                    'y': y,
+                    'z': z,
+                    'size': characteristic['countOfPositiveComments'],
+                    'color': f"Группа {group['group']}",
+                    'text': hover_text
+                })
+                index += 1
+
+        fig = px.scatter_3d(data, x='x', y='y', z='z', size='size', color='color', hover_name='text', size_max=60,
+                            color_discrete_sequence=[color] if color is not None else None)
+
+        if color is None:
+            commentCount = video_inf['commentCount']
+        formatted_date_time = self.parse_date_time(video_inf['published_at'])
+        fig.update_layout(title=f'Группы характеристик с позитивными комментариями для видео "{video_inf["title"]}"',
+                          legend_title=f"Дата публикации: {formatted_date_time}<br>"
+                                       f"Количество просмотров: {video_inf['viewCount']}<br>"
+                                       f"Количество лайков: {video_inf['likeCount']}<br>"
+                                       f"Количество проанализированных<br>комментариев: {commentCount}<br><br>")
+        fig.update_traces(marker=dict(line=dict(width=2, color='White')))
+        #fig.show()
+        #fig.write_html("art.html")
+        return fig
+
+    async def make_negative_bubble_plot_3d(self, group_characteristics, video_inf, color=None):
+        print("строю make_negative_bubble_plot_3d")
+        groups = group_characteristics['groups']
+        data = []
+        all_embeddings = [await self.CharacteristicClusterer.get_embedding(char['characteristic']) for group in groups
+                          for
+                          char in
+                          group['characteristics']]
+        # Handle cases with one or two characteristics
+        if len(all_embeddings) == 1:
+            vectors_3d = [[0, 0, all_embeddings[0][0]]]  # Generate Z coordinate
+        elif len(all_embeddings) == 2:
+            vectors_3d = [[0, emb[0], emb[1]] for emb in all_embeddings]  # Generate Z coordinate as 0
+        else:
+            pca = PCA(n_components=3)
+            vectors_3d = pca.fit_transform(all_embeddings)
+
+        index = 0
+        commentCount = 0
+        for i, group in enumerate(groups):
+            for j, characteristic in enumerate(group['characteristics']):
+                hover_text = ('{characteristic}<br>' +
+                              'Количество негативных комментариев: {count}').format(
+                    characteristic=characteristic['characteristic'],
+                    count=characteristic['countOfNegativeComments'])
+                commentCount += characteristic['countOfNegativeComments']
+                x = vectors_3d[index][0]
+                y = vectors_3d[index][1]
+                z = vectors_3d[index][2]
+                data.append({
+                    'x': x,
+                    'y': y,
+                    'z': z,
+                    'size': characteristic['countOfNegativeComments'],
+                    'color': f"Группа {group['group']}",
+                    'text': hover_text
+                })
+                index += 1
+
+        fig = px.scatter_3d(data, x='x', y='y', z='z', size='size', color='color', hover_name='text', size_max=60,
+                            color_discrete_sequence=[color] if color is not None else None)
+
+        if color is None:
+            commentCount = video_inf['commentCount']
+        formatted_date_time = self.parse_date_time(video_inf['published_at'])
+        fig.update_layout(title=f'Группы характеристик с негативными комментариями для видео "{video_inf["title"]}"',
+                          legend_title=f"Дата публикации: {formatted_date_time}<br>"
+                                       f"Количество просмотров: {video_inf['viewCount']}<br>"
+                                       f"Количество лайков: {video_inf['likeCount']}<br>"
+                                       f"Количество проанализированных<br>комментариев: {commentCount}<br><br>")
+        fig.update_traces(marker=dict(line=dict(width=2, color='White')))
+        #fig.show()
+        fig.write_html("art.html")
+        return fig
+
     async def make_main_graph(self, group_characteristics, video_inf):
+        print("строю make_main_graph")
         groups = []
         positive_values = []
         negative_values = []
@@ -189,6 +303,7 @@ class GraphBuilder:
         return fig
 
     async def make_main_group_graph(self, group_characteristics, selected_group, video_inf):
+        print("строю make_main_group_graph")
         for group_data in group_characteristics["groups"]:
             if group_data["group"] == selected_group:
                 group_characteristics = group_data["characteristics"]
@@ -266,7 +381,18 @@ class GraphBuilder:
         dt_obj = datetime.datetime.strptime(video_inf_date, '%Y-%m-%dT%H:%M:%SZ')
         formatted_date_time = dt_obj.strftime('%Y-%m-%d %H:%M:%S')
         return formatted_date_time
-#
+
+if __name__ == '__main__':
+    async def main():
+        graph = GraphBuilder()
+        with open('group.json', 'r', encoding='utf-8') as f:
+            groups = json.load(f)
+        with open('general_inf.json', 'r', encoding='utf-8') as f:
+            video_inf = json.load(f)
+        fig = await graph.make_positive_bubble_plot_3d(groups, video_inf)
+    asyncio.run(main())
+
+
 # if __name__ == '__main__':
 #     with open('group.json', 'r', encoding='utf-8') as f:
 #         groups = json.load(f)

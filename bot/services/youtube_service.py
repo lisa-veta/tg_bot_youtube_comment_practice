@@ -60,12 +60,12 @@ class YoutubeParser:
                 comment_count += 1
                 replycount = item['snippet']['totalReplyCount']
                 if replycount > 0:
-                    repl = "nответы на комментарий: [ "
+                    repl = " ответы на комментарий: [ "
                     for reply in item['replies']['comments']:
                         repl += reply['snippet']['textDisplay']
-                        comment_count += 1
                     repl += " ]"
                 comments.append(comment + repl)
+                print(comment)
 
             if 'nextPageToken' in video_response and comment_count < 50000:
                 video_response = youtube.commentThreads().list(
@@ -107,8 +107,23 @@ class YoutubeParser:
         match = re.search(r'v=([^&]+)', video_url)
         if match:
             return match.group(1)
-#
-# if __name__ == '__main__':
-#     youtube_parser = YoutubeParser()
-#     json = youtube_parser.get_general_inf("https://www.youtube.com/watch?v=GjkuE3Q18TQ&t=1s")
-#     print(json)
+        else:
+            match = re.search(r'youtu\.be/([^?]+)', video_url)
+            if match:
+                return match.group(1)
+        return None
+
+# if __name__ == "__main__":
+#        asyncio.run(main())
+#     async def main():
+#         #json = youtube_parser.get_general_inf("https://www.youtube.com/watch?v=GjkuE3Q18TQ&t=1s")
+#         # code = youtube_parser.get_video_code("https://www.youtube.com/watch?v=UCScWmyD3Mg")
+#         comments = youtube_parser.get_video_comments("https://www.youtube.com/watch?v=Jp4SB_lOu8E")
+#         for comment in comments:
+#             print(comment)
+
+if __name__ == "__main__":
+    async def main():
+        you_t = YoutubeParser()
+        comments = await you_t.get_video_comments("https://www.youtube.com/watch?v=Jp4SB_lOu8E")
+    asyncio.run(main())

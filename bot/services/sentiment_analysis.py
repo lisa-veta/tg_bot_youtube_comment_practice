@@ -1,4 +1,5 @@
 #Модуль для анализа тональности комментариев
+# -*- coding: utf-8 -*-
 import json
 import asyncio
 import ollama
@@ -12,18 +13,18 @@ class OllamaChat:
     def __init__(self, model_name='ilyagusev/saiga_llama3'):
         self.model_name = model_name
         self.request_queue = asyncio.Queue()
-        self.request_task = asyncio.create_task(self.process_requests())
+        # self.request_task = asyncio.create_task(self.process_requests())
 
-    async def start(self):  # Новая функция для запуска обработки запросов
-        self.request_task = asyncio.create_task(self.process_requests())
+    # async def start(self):  # Новая функция для запуска обработки запросов
+    #     self.request_task = asyncio.create_task(self.process_requests())
 
-    async def get_characteristics(self, url) -> str:
-        # Добавляем задачу в очередь
-        task = asyncio.create_task(self._get_characteristics_new_way(url))
-        await self.request_queue.put({'url': url, 'function_name': 'get_characteristics', 'future': task})
-        # Ожидаем результата выполнения задачи
-        result = await task
-        return result
+    # async def get_characteristics(self, url) -> str:
+    #     # Добавляем задачу в очередь
+    #     task = asyncio.create_task(self._get_characteristics_new_way(url))
+    #     await self.request_queue.put({'url': url, 'function_name': 'get_characteristics', 'future': task})
+    #     # Ожидаем результата выполнения задачи
+    #     result = await task
+    #     return result
 
     # ... (Your other code) ...
 
@@ -45,13 +46,13 @@ class OllamaChat:
     #         result = await function(url)
     #         request['future'].set_result(result)
     #
-    # async def get_characteristics(self, url) -> str:
-    #     # Добавляем задачу в очередь
-    #     task = asyncio.create_task(self._get_characteristics_new_way(url))
-    #     await self.request_queue.put(task)
-    #     # Ожидаем результата выполнения задачи
-    #     result = await task
-    #     return result
+    async def get_characteristics_by_chunked_comments(self, url) -> str:
+        # Добавляем задачу в очередь
+        task = asyncio.create_task(self._get_characteristics_by_chunked_comments(url))
+        await self.request_queue.put(task)
+        # Ожидаем результата выполнения задачи
+        result = await task
+        return result
     # async def get_group_name(self, characteristics) -> str:
     #     # Добавляем задачу в очередь
     #     task = asyncio.create_task(self._get_group_name(characteristics))
@@ -64,13 +65,13 @@ class OllamaChat:
     #     # Возвращаем результат выполнения нашей задачи
     #     return results[0]
 
-    # async def get_group_name(self, characteristics) -> str:
-    #     # Добавляем задачу в очередь
-    #     task = asyncio.create_task(self._get_group_name(characteristics))
-    #     await self.request_queue.put(task)
-    #     # Ожидаем результата выполнения задачи
-    #     result = await task
-    #     return result
+    async def get_group_name(self, characteristics) -> str:
+        # Добавляем задачу в очередь
+        task = asyncio.create_task(self._get_group_name(characteristics))
+        await self.request_queue.put(task)
+        # Ожидаем результата выполнения задачи
+        result = await task
+        return result
 
     async def get_characteristics(self, url) -> str:
         comments, comments_count = await self.parser.get_video_comments(url)
@@ -88,66 +89,54 @@ class OllamaChat:
         except json.JSONDecodeError:
             return response_text
 
-    async def _get_characteristics_new_way(self, url) -> str:
-        comments, comments_count = await self.parser.get_video_comments(url)
+    async def _get_characteristics_by_chunked_comments(self, url, parts) -> str:
+        comments, count = await self.parser.get_video_comments(url)
         print(comments)
-        with open("D:/УНИВЕР/практика/проба/code/bot/services/q_characteristics_new_way.txt", 'r', encoding='utf-8') as file:
+        with open("D:/УНИВЕР/практика/проба/code/bot/services/q_characteristics.txt", 'r',
+                  encoding='utf-8') as file:
             base_prompt = file.read()
-        chunk_size = len(comments) // 10 + 1
-        chunks = [comments[i:i + chunk_size] for i in range(0, len(comments), chunk_size)]
+
         json_data = []
-        for chunk in chunks:
-            count = f"Примерное количество комментариев: {len(chunk)}"
-            prompt = base_prompt + "\n".join(count) + "\n".join(chunk) + "\n" + base_prompt
-            response_text = await self.get_response_from_model(prompt)
+        if count < parts:
+            parts = count - 1
+        chunk_size = len(comments) // parts
+        count = f" \nКоличество комментариев: {chunk_size}"
+        # Отправляем запросы сгруппированными по частям для повышения эффективности
+        for i in range(0, len(comments), chunk_size):
+            chunk = comments[i:i + chunk_size]
+            print("chunk")
+            print(chunk)
+            # Создаем один промт для каждого фрагмента
+            prompt = base_prompt + "\n".join(chunk) + count + "\n" + base_prompt
+            print("prompt")
+            print(prompt)
+            # Отправляем запрос к модели
+            response = await self.get_response_from_model(prompt)
+            print("response")
+            print(response)
             try:
-                json_start = response_text.find("[")
-                json_end = response_text.find("]")
-                response_json = json.loads(response_text[json_start:json_end + 1])
+                json_start = response.find("[")
+                json_end = response.find("]")
+                response_json = json.loads(response[json_start:json_end + 1])
                 for characteristic_item in response_json:
-                    characteristic_item["characteristic"] = characteristic_item[
-                        "characteristic"].lower()  # Преобразуем к нижнему регистру
+                    characteristic_item["characteristic"] = characteristic_item["characteristic"].lower()
                     found = False
                     for existing_item in json_data:
                         if existing_item["characteristic"] == characteristic_item["characteristic"]:
-                            existing_item["countOfPositiveComments"] += characteristic_item["countOfPositiveComments"]
-                            existing_item["countOfNegativeComments"] += characteristic_item["countOfNegativeComments"]
+                            existing_item["countOfPositiveComments"] += characteristic_item[
+                                "countOfPositiveComments"]
+                            existing_item["countOfNegativeComments"] += characteristic_item[
+                                "countOfNegativeComments"]
                             found = True
                             break
                     if not found:
                         json_data.append(characteristic_item)
+                print("json_data")
                 print(json_data)
             except json.JSONDecodeError:
-                print(f"Ошибка декодирования JSON: {response_text}")
-            return json.dumps(json_data)
-
-    async def get_characteristics_by_single_comm(self, url) -> str:
-        comments = await self.parser.get_video_comments(url)
-        with open("D:/УНИВЕР/практика/проба/code/bot/services/q_characteristics_one_comment.txt", 'r', encoding='utf-8') as file:
-            base_prompt = file.read()
-        json_data = []
-        for comment in comments:
-            prompt = base_prompt + "\n".join(comment)
-            response_text = await self.get_response_from_model(prompt)
-            try:
-                json_start = response_text.find("[")
-                json_end = response_text.find("]")
-                response_json = json.loads(response_text[json_start:json_end + 1])
-                for characteristic_item in response_json:
-                    characteristic_item["characteristic"] = characteristic_item[
-                        "characteristic"].lower()  # Преобразуем к нижнему регистру
-                    found = False
-                    for existing_item in json_data:
-                        if existing_item["characteristic"] == characteristic_item["characteristic"]:
-                            existing_item["countOfPositiveComments"] += characteristic_item["countOfPositiveComments"]
-                            existing_item["countOfNegativeComments"] += characteristic_item["countOfNegativeComments"]
-                            found = True
-                            break
-                    if not found:
-                        json_data.append(characteristic_item)
-                # print(json_data)
-            except json.JSONDecodeError:
-                print(f"Ошибка декодирования JSON: {response_text}")
+                print(f"Ошибка декодирования JSON: {response}")
+        with open('output.json', 'w', encoding='utf-8') as f:
+            json.dump(json_data, f, ensure_ascii=False, indent=4)
         return json.dumps(json_data)
 
     async def get_tonality(self, url) -> str:
@@ -177,7 +166,7 @@ class OllamaChat:
         response_text = await self.get_response_from_model(prompt)
         return response_text
 
-    async def get_group_name(self, characteristics) -> str:
+    async def _get_group_name(self, characteristics) -> str:
         with open("D:/УНИВЕР/практика/проба/code/bot/services/q_group_name.txt", 'r', encoding='utf-8') as file:
             base_prompt = file.read()
 
@@ -226,9 +215,8 @@ class OllamaChat:
 if __name__ == '__main__':
     async def main():
         chat = OllamaChat()
-        await chat.start()
-        url = "https://www.youtube.com/watch?v=Jp4SB_lOu8E"
-        json_data = await chat.get_characteristics(url)
+        url = "https://www.youtube.com/watch?v=PgGsS5R_t3g"
+        json_data = await chat.get_characteristics_by_chunked_comments(url, 6)
         print(json_data)
     asyncio.run(main())
     # with open('ex.json', 'r', encoding='utf-8') as f:
