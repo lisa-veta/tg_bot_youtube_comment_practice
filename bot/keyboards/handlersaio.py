@@ -17,14 +17,14 @@ from PIL import Image
 
 import text
 import config
-sys.path.insert(1, os.path.join(sys.path[0], 'C:/Users/vladi/PycharmProjects/tg_youtube_analytics/bot/database'))
+sys.path.insert(1, os.path.join(sys.path[0], 'D:/УНИВЕР/практика/проба/code/bot/database'))
 from model import Request
 
-sys.path.insert(1, os.path.join(sys.path[0], 'C:/Users/vladi/PycharmProjects/tg_youtube_analytics/bot/database'))
+sys.path.insert(1, os.path.join(sys.path[0], 'D:/УНИВЕР/практика/проба/code/bot/database'))
 from db_service import DatabaseService
-sys.path.insert(1, os.path.join(sys.path[0], 'C:/Users/vladi/PycharmProjects/tg_youtube_analytics/bot/services'))
+sys.path.insert(1, os.path.join(sys.path[0], 'D:/УНИВЕР/практика/проба/code/bot/services'))
 from controller import Controller
-sys.path.insert(1, os.path.join(sys.path[0], 'C:/Users/vladi/PycharmProjects/tg_youtube_analytics/bot/utils'))
+sys.path.insert(1, os.path.join(sys.path[0], 'D:/УНИВЕР/практика/проба/code/bot/utils'))
 import json_parser
 all_media_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'all_media')
 
@@ -75,8 +75,118 @@ async def start_handler(message: Message):
         kb.append(KeyboardButton(text='Админ\U0001F6AA'))
         user_keyboard = ReplyKeyboardMarkup(keyboard=kb, resize_keyboard=True)
     await message.answer(f"Добро пожаловать {username}! Если хочешь получить анализ комментариев, скинь ссылку на видео YouTube!", reply_markup=user_keyboard)
+@router.message(F.text == 'История\U0001F4D6')
+async def get_history_requests(message: Message):
+    await db_service.create_engine()
+    user_id = message.from_user.id
+    history = await db_service.get_request_by_id_20(user_id)
+    video_in_history = []
+    if len(history) != 0:
+        for request in history:
+            video_in_history.append(f"/{request.message_id} {request.video_information['title']} от {request.datetime.strftime('%d.%m.%Y %H:%M:%S')}")
+        history_text = '\n'.join(video_in_history)
+        await message.answer(history_text)
+    else:
+        await message.answer("В истории пока что нет ни одного запроса")
+@router.message(F.text.startswith('/') & F.text[1:].isdigit())
+async def goto_request_message(message: Message):
+    try:
+        message_id = int(message.text[1:])
+        await message.answer(
+            text="Перейдите по ответу, чтобы посмотреть информацию по запросу",
+            reply_to_message_id=message_id
+        )
+    except Exception as e:
+        await message.answer("Я вас не понял.")
+@router.message(F.text == 'Избранное\U00002763')
+async def goto_favoutite_menu(message: Message, state: FSMContext):
+    await db_service.create_engine()
+    user_id = message.from_user.id
+    favourites = await db_service.get_user_favourites(user_id)
+    if len(favourites) != 0:
+        video_in_favourite_button = InlineKeyboardBuilder()
+        favourite_videos_m_id = []
+        for video in favourites:
+            video_in_favourite_button.row(InlineKeyboardButton(text=str(video.video_information['title']), callback_data='favourite_' + str(video.message_id)))
+            favourite_videos_m_id.append(video.message_id)
+        await state.update_data(favourites_video_m_id=favourite_videos_m_id)
+        msg = await message.answer("Видео, которые вы добавили в избранное:", reply_markup=video_in_favourite_button.as_markup())
+        await state.update_data(favs_msg_id=message.message_id)
+    else:
+        await message.answer("Вы еще не добавили ни одного видео в избранное")
+@router.callback_query(F.data.startswith('favourite_'))
+async def favourite_handler(callback_query: CallbackQuery, state: FSMContext, m_id=None):
+    await db_service.create_engine()
+    if m_id is None:
+        m_id = int(callback_query.data[10:])
+    user_id = callback_query.from_user.id
+    request = await db_service.get_user_favourite_by_m_id(user_id, m_id)
+    request = request[0]
+    title = request['title']
+    views = request['viewCount']
+    likes = request['likeCount']
+    comments = request['commentCount']
+    builder = InlineKeyboardBuilder()
+    builder.row(InlineKeyboardButton(text="Просмотреть анализ видео", callback_data=f"favorite_video_anal_{m_id}"))
+    builder.row(InlineKeyboardButton(text="Обновить характеристики и построить анализ (1 токен)", callback_data="get_video_info"))
+    builder.row(InlineKeyboardButton(text="Удалить видео из избранного", callback_data=f"delete_favourite_{m_id}"))
+    builder.row(InlineKeyboardButton(text="<< Назад в избранное", callback_data="back_to_fav"))
+    msg = await callback_query.message.edit_text(
+        text.video_info_text_in_fav.format(
+            title, likes, comments, views
+        ), reply_markup=builder.as_markup(),
+    )
+    await state.update_data(request_message=msg)
+@router.callback_query(F.data.startswith('favorite_video_anal_'))
+async def favorite_video_handler(callback_query: CallbackQuery):
+    m_id = int(callback_query.data[20:])
+    try:
+        await callback_query.message.answer(
+            text="Перейдите по ответу, чтобы посмотреть информацию по запросу",
+            reply_to_message_id=m_id
+        )
+    except Exception as e:
+        await callback_query.message.answer("Я вас не понял.")
+@router.callback_query(F.data.startswith("delete_favourite_"))
+async def delete_favourite(callback_query: CallbackQuery):
+    m_id = int(callback_query.data[17:])
+    builder = InlineKeyboardBuilder()
+    builder.add(InlineKeyboardButton(text="Да", callback_data=f"delete_yes_{m_id}"))
+    builder.row(InlineKeyboardButton(text="Нет", callback_data=f"delete_no_{m_id}"))
+    msg = await callback_query.message.edit_text("Вы уверены, что хотите удалить видео из избранного?",
+                                                 reply_markup=builder.as_markup())
+@router.callback_query(F.data.startswith('delete_yes_'))
+async def delete_yes(callback_query: CallbackQuery, state: FSMContext):
+    user_id = callback_query.from_user.id
+    m_id = int(callback_query.data[11:])
+    await db_service.create_engine()
+    await db_service.change_favourite_flag(m_id, False)
+    favourites = await db_service.get_user_favourites(user_id)
+    if len(favourites) != 0:
+        await return_to_fav(callback_query, state)
+    else:
+        await callback_query.message.edit_text("В избранном пусто")
 
-
+@router.callback_query(F.data.startswith("delete_no_"))
+async def delete_no(callback_query: CallbackQuery, state: FSMContext):
+    m_id = int(callback_query.data[10:])
+    await favourite_handler(callback_query, state, m_id)
+@router.callback_query(F.data =="back_to_fav")
+async def return_to_fav(callback_query: CallbackQuery, state: FSMContext):
+    user_id = callback_query.from_user.id
+    favourites = await db_service.get_user_favourites(user_id)
+    if len(favourites) != 0:
+        video_in_favourite_button = InlineKeyboardBuilder()
+        favourite_videos_m_id = []
+        for video in favourites:
+            video_in_favourite_button.row(InlineKeyboardButton(text=str(video.video_information['title']),
+                                                               callback_data='favourite_' + str(video.message_id)))
+            favourite_videos_m_id.append(video.message_id)
+        await state.update_data(favourites_video_m_id=favourite_videos_m_id)
+        msg = await callback_query.message.edit_text("Видео, которые вы добавили в избранное:",
+                                                     reply_markup=video_in_favourite_button.as_markup())
+    else:
+        await callback_query.message.answer("Вы еще не добавили ни одного видео в избранное")
 @router.message(F.text.regexp(r'https?://(?:www\.)?youtube\.com/watch\?v=\w+') & ~F.text.startswith('start'))
 async def message_handler(message: Message, state: FSMContext):
     await db_service.create_engine()
@@ -94,8 +204,8 @@ async def message_handler(message: Message, state: FSMContext):
     await state.update_data(video_info=video_info_json)
     if request is not None:
         builder = InlineKeyboardBuilder()
-        builder.row(InlineKeyboardButton(text="Взять характеристики из хранилища (1 токен)", callback_data="get_from_db"))
-        builder.row(InlineKeyboardButton(text="Обновить характеристики (1 токен)", callback_data="get_video_info"))
+        builder.row(InlineKeyboardButton(text="Построить анализ по характеристикам из БД (1 токен)", callback_data="get_from_db"))
+        builder.row(InlineKeyboardButton(text="Обновить характеристики и построить анализ (1 токен)", callback_data="get_video_info"))
         builder.row(InlineKeyboardButton(text="Отмена", callback_data="cancel"))
         msg = await message.answer(
             text.video_info_text.format(
@@ -111,8 +221,6 @@ async def message_handler(message: Message, state: FSMContext):
         msg = await message.answer(text.video_info_text.format(title, formatted_date_time, likes, comments, views),
                                    reply_markup=builder.as_markup())
         await state.update_data(request_message=msg)
-
-
 
 @router.callback_query(F.data == "get_from_db")
 async def get_from_db_handler(callback_query: CallbackQuery, state: FSMContext):
@@ -269,7 +377,6 @@ async def back_to_groups(callback_query: CallbackQuery, state: FSMContext):
 async def processing_handler(message: Message, state: FSMContext):
     await message.delete()
 
-
 @router.callback_query(F.data == "cancel")
 async def cancel_handler(callback_query: CallbackQuery, state: FSMContext):
     data = await state.get_data()
@@ -277,9 +384,6 @@ async def cancel_handler(callback_query: CallbackQuery, state: FSMContext):
     await request_msg.edit_text(request_msg.text, reply_markup=None)
     await callback_query.message.answer(
         f"Операция отменена")
-
-
-
 
 @router.message(Form.groups)
 async def groups_handler(message: Message, state: FSMContext):
@@ -297,7 +401,7 @@ async def groups_handler(message: Message, state: FSMContext):
             video_link = data.get("video_link")
             video_info_json = data.get("video_info")
             user_id = data.get("user_id")
-            message_id = data.get("message_id")
+            message_id = data.get("url_message_id")
             if message_id is None:
                 message_id = -1
             source = data.get("source")
@@ -361,7 +465,6 @@ async def build_group_buttons(json_group: dict, add_buttom: bool) -> InlineKeybo
         back_button = InlineKeyboardButton(text="Назад к главному графику", callback_data="back_to_main")
         buttons["back_to_main"] = back_button
     return InlineKeyboardMarkup(row_width=2, inline_keyboard=[[buttons[group]] for group in buttons])
-
 
 @router.callback_query(F.data == "add_to_favorites")
 async def add_to_favorites(callback_query: CallbackQuery, state: FSMContext):
