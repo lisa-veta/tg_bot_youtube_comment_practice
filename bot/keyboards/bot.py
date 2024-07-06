@@ -7,8 +7,8 @@ from telebot.async_telebot import AsyncTeleBot
 from telebot.types import Message, CallbackQuery, InlineKeyboardMarkup
 from telebot import types
 import re
-# sys.path.insert(1, os.path.join(sys.path[0], 'C:/Users/Королева/PycharmProjects/tg_youtube_analytics/bot/services'))
-# import controller
+sys.path.insert(1, os.path.join(sys.path[0], 'D:/УНИВЕР/практика/проба/code/bot/services'))
+import controller
 
 class User:
     def __init__(self):
@@ -80,7 +80,7 @@ class UnknownCommandHandler(BaseHandler):
             await self.bot.send_message(message.chat.id, "Извините, я не понял эту команду.")
 
 class InlineButtonHandler(BaseHandler):
-    def __init__(self, bot: AsyncTeleBot, user: User, chat: Chat, controller: Controller):
+    def __init__(self, bot: AsyncTeleBot, user: User, chat: Chat, controller: controller):
         self.bot = bot
         self.user = user
         self.chat = chat
@@ -89,7 +89,7 @@ class InlineButtonHandler(BaseHandler):
     async def handle(self, call: CallbackQuery):
         if call.data.isdigit():
             self.chat.group_counter = int(call.data)
-            self.chat.set_json(self.controller.get_json_groups(self.chat.video_link, self.chat.group_counter))##тут тоже работает
+            self.chat.set_json(self.controller.get_json_groups_from_chat(self.chat.video_link, self.chat.group_counter))##тут тоже работает
             self.chat.set_group_names()##работает
             m_c = await self.bot.edit_message_text(chat_id=self.chat.chat_id,
                                                    message_id=self.chat.current_message_id, text='Ваш запрос в очереди')
@@ -106,22 +106,23 @@ class InlineButtonHandler(BaseHandler):
             # await self.bot.edit_message_text(chat_id=self.chat.chat_id,
             #                                  message_id=self.chat.current_message_id,
             #                                  text='Вот графики по вашему видео')
-            fig_b_p = self.controller.get_general_positive_bubble_graph(self.chat.json)
-            fig_b_n = self.controller.get_general_negative_bubble_graph(self.chat.json)
-            fig_g = self.controller.get_main_general_graph(self.chat.json)
+            video_inf = self.controller.get_video_info(self.chat.video_link)
+            fig_b_p = self.controller.get_general_positive_bubble_graph(self.chat.json, video_inf)
+            fig_b_n = self.controller.get_general_negative_bubble_graph(self.chat.json, video_inf)
+            fig_g = self.controller.get_main_general_graph(self.chat.json, video_inf)
 
-            fig_b_p.write_image(f"gen_positive_bubble_{self.user.user_id}.png", width=1800, height=800)
-            fig_b_n.write_image(f"gen_negative_bubble_{self.user.user_id}.png", width=1800, height=800)
-            fig_g.write_image(f"gen_histogram_{self.user.user_id}.png", width=1800, height=800)
+            fig_b_p.write_image(f"D:/УНИВЕР/практика/проба/code/bot/services/gen_positive_bubble_{self.user.user_id}.png", width=1800, height=800)
+            fig_b_n.write_image(f"D:/УНИВЕР/практика/проба/code/bot/services/gen_negative_bubble_{self.user.user_id}.png", width=1800, height=800)
+            fig_g.write_image(f"D:/УНИВЕР/практика/проба/code/bot/services/gen_histogram_{self.user.user_id}.png", width=1800, height=800)
             keyboard = types.InlineKeyboardMarkup(row_width=3)
-            list = [types.InlineKeyboardButton(text=f'{self.chat.group_names[i]}',
-                                               callback_data=f'{self.chat.group_names[i]}'+str(i+1)) for i in range(len(self.chat.group_names))]
-            keyboard.add(*list)
-            with open(f"gen_positive_bubble_{self.user.user_id}.png", 'rb') as photo:
+            # list = [types.InlineKeyboardButton(text=f'{self.chat.group_names[i]}',
+            #                                    callback_data=f'{self.chat.group_names[i]}'+str(i+1)) for i in range(len(self.chat.group_names))]
+            # keyboard.add(*list)
+            with open(f"D:/УНИВЕР/практика/проба/code/bot/services/gen_positive_bubble_{self.user.user_id}.png", 'rb') as photo:
                 await self.bot.send_photo(chat_id=self.chat.chat_id, photo=photo)
-            with open(f"gen_negative_bubble_{self.user.user_id}.png", 'rb') as photo:
+            with open(f"D:/УНИВЕР/практика/проба/code/bot/services/gen_negative_bubble_{self.user.user_id}.png", 'rb') as photo:
                 await self.bot.send_photo(chat_id=self.chat.chat_id, photo=photo)
-            with open(f"gen_histogram_{self.user.user_id}.png", 'rb') as photo:
+            with open(f"D:/УНИВЕР/практика/проба/code/bot/services/gen_histogram_{self.user.user_id}.png", 'rb') as photo:
                 await self.bot.send_photo(chat_id=self.chat.chat_id, photo=photo, caption='', reply_markup=keyboard)
 class Bot:
     def __init__(self, token: str):
