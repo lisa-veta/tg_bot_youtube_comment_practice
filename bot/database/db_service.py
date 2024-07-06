@@ -172,7 +172,7 @@ class DatabaseService():
 
     async def get_users(self) -> list[User]:
         async with AsyncSession(self.engine) as session:
-            users = await session.execute(select(User))
+            users = await session.execute(select(User).order_by(User.date_registration.desc()))
             users = list(users.scalars().all())
             return users
 
@@ -235,7 +235,7 @@ class DatabaseService():
 
     async def get_token_requests(self) -> list[TokenRequest]:
         async with AsyncSession(self.engine) as session:
-            token_requests = await session.execute(select(TokenRequest))
+            token_requests = await session.execute(select(TokenRequest).order_by(TokenRequest.datetime))
             token_requests = token_requests.scalars().all()
             return list(token_requests)
 
