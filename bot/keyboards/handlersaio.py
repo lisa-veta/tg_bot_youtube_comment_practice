@@ -250,7 +250,10 @@ async def token_handler(message: Message, state: FSMContext, index=0):
 
     #Создание инлайн клавиатуры
     builder = InlineKeyboardBuilder()
-    if index == 0:
+    if len(token_requests) == 1:
+        builder.row(InlineKeyboardButton(text="Подтвердить", callback_data="accept_token_request"))
+        builder.row(InlineKeyboardButton(text="Отклонить", callback_data="cancel_token_request"))
+    elif index == 0:
         builder.row(InlineKeyboardButton(text=">", callback_data="next_token_request"))
         builder.row(InlineKeyboardButton(text="Подтвердить", callback_data="accept_token_request"))
         builder.row(InlineKeyboardButton(text="Отклонить", callback_data="cancel_token_request"))
