@@ -2,6 +2,8 @@ import sys
 import os
 import asyncio
 import logging
+
+import pika
 from aiogram import Bot, Dispatcher, types, Router
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
@@ -9,7 +11,7 @@ from aiogram.filters.command import Command
 from aiogram.fsm.storage.memory import MemoryStorage
 import config
 from handlersaio import router
-sys.path.insert(1, os.path.join(sys.path[0], 'C:/Users/Королева/PycharmProjects/tg_youtube_analytics/bot/database'))
+sys.path.insert(1, os.path.join(sys.path[0], 'C:/Users/vladi/PycharmProjects/tg_youtube_analytics/bot//database'))
 from db_service import DatabaseService
 
 db_service = None
@@ -25,5 +27,8 @@ async def main():
 
 
 if __name__ == "__main__":
+    # connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
+    # channel = connection.channel()
+    # channel.queue_declare(queue='ollama')
     logging.basicConfig(level=logging.INFO)
     asyncio.run(main())

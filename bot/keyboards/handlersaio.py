@@ -17,14 +17,14 @@ from PIL import Image
 
 import text
 import config
-sys.path.insert(1, os.path.join(sys.path[0], 'D:/УНИВЕР/практика/проба/code/bot/database'))
+sys.path.insert(1, os.path.join(sys.path[0], 'C:/Users/vladi/PycharmProjects/tg_youtube_analytics/bot/database'))
 from model import Request
 
-sys.path.insert(1, os.path.join(sys.path[0], 'D:/УНИВЕР/практика/проба/code/bot/database'))
+sys.path.insert(1, os.path.join(sys.path[0], 'C:/Users/vladi/PycharmProjects/tg_youtube_analytics/bot/database'))
 from db_service import DatabaseService
-sys.path.insert(1, os.path.join(sys.path[0], 'D:/УНИВЕР/практика/проба/code/bot/services'))
+sys.path.insert(1, os.path.join(sys.path[0], 'C:/Users/vladi/PycharmProjects/tg_youtube_analytics/bot/services'))
 from controller import Controller
-sys.path.insert(1, os.path.join(sys.path[0], 'D:/УНИВЕР/практика/проба/code/bot/utils'))
+sys.path.insert(1, os.path.join(sys.path[0], 'C:/Users/vladi/PycharmProjects/tg_youtube_analytics/bot/utils'))
 import json_parser
 all_media_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'all_media')
 
@@ -37,6 +37,7 @@ controller = Controller()
 class Form(StatesGroup):
      groups = State()
      processing = State()
+     token_requests = State()
 
 from collections import deque
 
@@ -72,7 +73,7 @@ async def start_handler(message: Message):
     if user.role_id == 1:
         user_keyboard = ReplyKeyboardMarkup(keyboard=kb, resize_keyboard=True)
     elif user.role_id == 2:
-        kb.append(KeyboardButton(text='Админ\U0001F6AA'))
+        kb.append([KeyboardButton(text='Админ\U0001F6AA')])
         user_keyboard = ReplyKeyboardMarkup(keyboard=kb, resize_keyboard=True)
     await message.answer(f"Добро пожаловать {username}! Если хочешь получить анализ комментариев, скинь ссылку на видео YouTube!", reply_markup=user_keyboard)
 @router.message(F.text == 'История\U0001F4D6')
@@ -187,6 +188,102 @@ async def return_to_fav(callback_query: CallbackQuery, state: FSMContext):
                                                      reply_markup=video_in_favourite_button.as_markup())
     else:
         await callback_query.message.answer("Вы еще не добавили ни одного видео в избранное")
+
+@router.message(F.text == "Админ\U0001F6AA")
+async def admin_handler(message: Message, state: FSMContext):
+    kb = [[KeyboardButton(text='Управление пользователями\U0001F465'),
+           KeyboardButton(text='Статистика БД\U0001F418\U0001F4CA'),
+           KeyboardButton(text='Выдать токены\U0001F4B8'),],
+          [KeyboardButton(text='Выйти из режима администрирования\U0001F6AA')]]
+    admin_keyboard = ReplyKeyboardMarkup(keyboard=kb, resize_keyboard=True)
+    await message.answer(f"Рады приветствовать вас в панели администрирования! Выберите одну из предложенных кнопок!", reply_markup=admin_keyboard)
+
+@router.message(F.text == "Управление пользователями\U0001F465")
+async def manage_user_handler(message: Message, state: FSMContext):
+    await message.answer("Управление пользователем:)")
+
+@router.message(F.text == "Статистика БД\U0001F418\U0001F4CA")
+async def statistic_handler(message: Message, state: FSMContext):
+    await message.answer("Статистика БД:)")
+
+@router.message(F.text == "Выдать токены\U0001F4B8")
+async def token_handler(message: Message, state: FSMContext, index=0):
+    start_message = 0
+    if message.text == "Выдать токены\U0001F4B8":
+        start_message = message
+
+    #Получения текущего токен реквеста
+    token_requests = await db_service.get_token_requests()
+    await state.update_data(index=index)
+    if len(token_requests) == 0:
+        if message == start_message:
+            await message.answer("Запросов на получение токенов нет :(")
+            return
+        else:
+            await message.edit_text("Запросов на получение токенов нет :(")
+            return
+    token_request = token_requests[index]
+    await state.update_data(token_request=token_request)
+
+    #Получение данных для отображения
+    user_id = token_request.user_id
+    username = await db_service.get_username(user_id)
+    amount = token_request.amount
+    date = token_request.datetime
+
+    #Создание инлайн клавиатуры
+    builder = InlineKeyboardBuilder()
+    if index == 0:
+        builder.row(InlineKeyboardButton(text=">", callback_data="next_token_request"))
+        builder.row(InlineKeyboardButton(text="Подтвердить", callback_data="accept_token_request"))
+        builder.row(InlineKeyboardButton(text="Отклонить", callback_data="cancel_token_request"))
+    elif index == len(token_requests) - 1:
+        builder.row(InlineKeyboardButton(text="<", callback_data="previous_token_request"))
+        builder.row(InlineKeyboardButton(text="Подтвердить", callback_data="accept_token_request"))
+        builder.row(InlineKeyboardButton(text="Отклонить", callback_data="cancel_token_request"))
+    else:
+        builder.row(InlineKeyboardButton(text="<", callback_data="previous_token_request"),
+                    InlineKeyboardButton(text=">", callback_data="next_token_request"))
+        builder.row(InlineKeyboardButton(text="Подтвердить", callback_data="accept_token_request"))
+        builder.row(InlineKeyboardButton(text="Отклонить", callback_data="cancel_token_request"))
+
+    if message == start_message:
+        await message.answer(text.token_request_text.format(username, amount, date), reply_markup=builder.as_markup())
+    else:
+        await message.edit_text(text.token_request_text.format(username, amount, date), reply_markup=builder.as_markup())
+
+@router.callback_query(F.data == "previous_token_request")
+async def switch_to_previous(callback_query: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    index = data["index"] - 1
+    await token_handler(callback_query.message, state, index)
+
+
+@router.callback_query(F.data == "next_token_request")
+async def switch_to_next(callback_query: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    index = data["index"] + 1
+    await token_handler(callback_query.message, state, index)
+    
+@router.callback_query(F.data == "accept_token_request")
+async def switch_to_next(callback_query: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    token_request = data["token_request"]
+    token_request_id = token_request.id
+    await db_service.accept_token_request(token_request_id)
+    await callback_query.answer("Токены начислены")
+    await token_handler(callback_query.message, state)
+    
+@router.callback_query(F.data == "cancel_token_request")
+async def switch_to_next(callback_query: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    token_request = data["token_request"]
+    token_request_id = token_request.id
+    await db_service.delete_token_request(token_request_id)
+    await callback_query.answer("Запрос отклонен")
+    await token_handler(callback_query.message, state)
+
+
 @router.message(F.text.regexp(r'https?://(?:www\.)?youtube\.com/watch\?v=\w+') & ~F.text.startswith('start'))
 async def message_handler(message: Message, state: FSMContext):
     await db_service.create_engine()
