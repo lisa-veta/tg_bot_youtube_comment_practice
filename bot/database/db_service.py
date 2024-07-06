@@ -48,6 +48,29 @@ class DatabaseService():
             session.add_all([user, admin, banned])
             await session.commit()
 
+    async def get_role(self, role_id: int):
+        async with AsyncSession(self.engine) as session:
+            role = await session.get(Role, role_id)
+            return role.role_name
+
+    async def ban(self, user_id: int):
+        async with AsyncSession(self.engine) as session:
+            user = await session.get(User, user_id)
+            user.role_id = 3
+            await session.commit()
+
+    async def unban(self, user_id: int):
+        async with AsyncSession(self.engine) as session:
+            user = await session.get(User, user_id)
+            user.role_id = 1
+            await session.commit()
+
+    async def make_admin(self, user_id: int):
+        async with AsyncSession(self.engine) as session:
+            user = await session.get(User, user_id)
+            user.role_id = 2
+            await session.commit()
+
     async def add_user(self, user_id: int, username: str, role: str, token_balance=5):
         async with AsyncSession(self.engine) as session:
             user = User(
@@ -149,7 +172,7 @@ class DatabaseService():
 
     async def get_users(self) -> list[User]:
         async with AsyncSession(self.engine) as session:
-            users = await session.execute(select(User))
+            users = await session.execute(select(User).order_by(User.date_registration.desc()))
             users = list(users.scalars().all())
             return users
 
@@ -212,7 +235,7 @@ class DatabaseService():
 
     async def get_token_requests(self) -> list[TokenRequest]:
         async with AsyncSession(self.engine) as session:
-            token_requests = await session.execute(select(TokenRequest))
+            token_requests = await session.execute(select(TokenRequest).order_by(TokenRequest.datetime))
             token_requests = token_requests.scalars().all()
             return list(token_requests)
 

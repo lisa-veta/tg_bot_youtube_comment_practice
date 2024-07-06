@@ -209,7 +209,132 @@ async def admin_handler(message: Message, state: FSMContext):
 
 @router.message(F.text == "Управление пользователями\U0001F465")
 async def manage_user_handler(message: Message, state: FSMContext):
-    await message.answer("Управление пользователем:)")
+    await state.update_data(manage_message=message)
+    #Create keyboard
+    builder = InlineKeyboardBuilder()
+    builder.row(InlineKeyboardButton(text="Просмотреть пользователей", callback_data="view_users"))
+    builder.row(InlineKeyboardButton(text="Статистика посещений пользователей", callback_data="s"))
+    builder.row(InlineKeyboardButton(text="Статистика новых пользователей", callback_data="st"))
+    await message.answer("<b>Управление пользователем</b>", reply_markup=builder.as_markup())
+
+@router.callback_query(F.data == "view_users")
+async def view_all_users(callback_query: CallbackQuery, state: FSMContext, index=0):
+    await db_service.create_engine()
+    await state.update_data(view_callback=callback_query)
+
+    # Получениe текущего user
+    users = await db_service.get_users()
+    await state.update_data(index=index)
+    user = users[index]
+    await state.update_data(user=user)
+
+    # Получение данных для отображения
+    user_id = user.id
+    username = user.username
+    role_id = user.role_id
+    role = await db_service.get_role(role_id)
+    token_balance = user.token_balance
+    date_registration = user.date_registration
+
+    # Создание инлайн клавиатуры
+    builder = InlineKeyboardBuilder()
+    if len(users) == 1:
+        pass
+    elif index == 0:
+        builder.row(InlineKeyboardButton(text=">", callback_data="next_user"))
+    elif index == len(users) - 1:
+        builder.row(InlineKeyboardButton(text="<", callback_data="previous_user"))
+    else:
+        builder.row(InlineKeyboardButton(text="<", callback_data="previous_user"),
+                    InlineKeyboardButton(text=">", callback_data="next_user"))
+
+    if role_id == 3:
+        builder.row(InlineKeyboardButton(text="Разбанить", callback_data="unban"))
+    elif role_id == 1:
+        builder.row(InlineKeyboardButton(text="Бан", callback_data="ban"))
+        builder.row(InlineKeyboardButton(text="Сделать администратором", callback_data="make_admin"))
+
+    builder.row(InlineKeyboardButton(text="Начисление токенов", callback_data="add_tokens"))
+    builder.row(InlineKeyboardButton(text="Статистика", callback_data="statistics"))
+    builder.row(InlineKeyboardButton(text="Назад", callback_data="back_to_manage"))
+
+    await callback_query.message.edit_text(
+        text=text.user_text.format(index + 1, len(users), username, user_id, role, token_balance, date_registration),
+        reply_markup=builder.as_markup())
+
+@router.callback_query(F.data == "previous_user")
+async def switch_to_previous(callback_query: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    index = data["index"] - 1
+    await view_all_users(callback_query, state, index)
+
+
+@router.callback_query(F.data == "next_user")
+async def switch_to_next(callback_query: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    index = data["index"] + 1
+    await view_all_users(callback_query, state, index)
+
+@router.callback_query(F.data == "ban")
+async def switch_to_next(callback_query: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    index = data["index"]
+    user = data["user"]
+    await db_service.ban(user.id)
+    await callback_query.answer("Пользователь заблокирован")
+    await view_all_users(callback_query, state, index)
+
+@router.callback_query(F.data == "unban")
+async def switch_to_next(callback_query: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    index = data["index"]
+    user = data["user"]
+    await db_service.unban(user.id)
+    await callback_query.answer("Пользователь разблокирован")
+    await view_all_users(callback_query, state, index)
+
+@router.callback_query(F.data == "make_admin")
+async def switch_to_next(callback_query: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    index = data["index"]
+    user = data["user"]
+    await db_service.make_admin(user.id)
+    await callback_query.answer("Пользователь теперь - Администратор!")
+    await view_all_users(callback_query, state, index)
+
+@router.callback_query(F.data == "back_to_manage")
+async def back(callback_query: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    message = data["manage_message"]
+    await callback_query.message.delete()
+    await manage_user_handler(message, state)
+
+@router.callback_query(F.data == "add_tokens")
+async def add_tokens(callback_query: CallbackQuery, state: FSMContext):
+    keyboard = InlineKeyboardBuilder()
+    keyboard.row(InlineKeyboardButton(text="5", callback_data="give_token_5"),
+                 InlineKeyboardButton(text="7", callback_data="give_token_7"),
+                 InlineKeyboardButton(text="10", callback_data="give_token_10"))
+    keyboard.row(InlineKeyboardButton(text="<< Назад", callback_data="back_to_ac"))
+    msg = await callback_query.message.edit_text("Сколько токенов выдать?", reply_markup=keyboard.as_markup())
+    await state.update_data(ac_msg_id=msg.message_id)
+
+@router.callback_query(F.data.startswith('give_token_'))
+async def request_token(callback_query: CallbackQuery, state: FSMContext):
+    await db_service.create_engine()
+    data = await state.get_data()
+
+    user = data["user"]
+    index = data["index"]
+    amount = int(callback_query.data[11:])
+    try:
+        await db_service.add_tokens(user.id, amount)
+        await callback_query.answer(f"{amount} токенов добавлено пользователю {user.username}.")
+        await view_all_users(callback_query, state, index)
+    except Exception as e:
+        await callback_query.answer(f"Ошибка: {e}", show_alert=True)
+
+
 
 @router.message(F.text == "Статистика БД\U0001F418\U0001F4CA")
 async def statistic_handler(message: Message, state: FSMContext):
@@ -217,6 +342,7 @@ async def statistic_handler(message: Message, state: FSMContext):
 
 @router.message(F.text == "Выдать токены\U0001F4B8")
 async def token_handler(message: Message, state: FSMContext, index=0):
+    await db_service.create_engine()
     start_message = 0
     if message.text == "Выдать токены\U0001F4B8":
         start_message = message
@@ -243,26 +369,21 @@ async def token_handler(message: Message, state: FSMContext, index=0):
     #Создание инлайн клавиатуры
     builder = InlineKeyboardBuilder()
     if len(token_requests) == 1:
-        builder.row(InlineKeyboardButton(text="Подтвердить", callback_data="accept_token_request"))
-        builder.row(InlineKeyboardButton(text="Отклонить", callback_data="cancel_token_request"))
+        pass
     elif index == 0:
         builder.row(InlineKeyboardButton(text=">", callback_data="next_token_request"))
-        builder.row(InlineKeyboardButton(text="Подтвердить", callback_data="accept_token_request"))
-        builder.row(InlineKeyboardButton(text="Отклонить", callback_data="cancel_token_request"))
     elif index == len(token_requests) - 1:
         builder.row(InlineKeyboardButton(text="<", callback_data="previous_token_request"))
-        builder.row(InlineKeyboardButton(text="Подтвердить", callback_data="accept_token_request"))
-        builder.row(InlineKeyboardButton(text="Отклонить", callback_data="cancel_token_request"))
     else:
         builder.row(InlineKeyboardButton(text="<", callback_data="previous_token_request"),
                     InlineKeyboardButton(text=">", callback_data="next_token_request"))
-        builder.row(InlineKeyboardButton(text="Подтвердить", callback_data="accept_token_request"))
-        builder.row(InlineKeyboardButton(text="Отклонить", callback_data="cancel_token_request"))
+    builder.row(InlineKeyboardButton(text="Подтвердить", callback_data="accept_token_request"))
+    builder.row(InlineKeyboardButton(text="Отклонить", callback_data="cancel_token_request"))
 
     if message == start_message:
-        await message.answer(text.token_request_text.format(username, amount, date), reply_markup=builder.as_markup())
+        await message.answer(text.token_request_text.format(index + 1, len(token_requests), username, amount, date), reply_markup=builder.as_markup())
     else:
-        await message.edit_text(text.token_request_text.format(username, amount, date), reply_markup=builder.as_markup())
+        await message.edit_text(text.token_request_text.format(index + 1, len(token_requests), username, amount, date), reply_markup=builder.as_markup())
 
 @router.callback_query(F.data == "previous_token_request")
 async def switch_to_previous(callback_query: CallbackQuery, state: FSMContext):
@@ -278,7 +399,7 @@ async def switch_to_next(callback_query: CallbackQuery, state: FSMContext):
     await token_handler(callback_query.message, state, index)
 
 @router.callback_query(F.data == "accept_token_request")
-async def switch_to_next(callback_query: CallbackQuery, state: FSMContext):
+async def accept_token_req(callback_query: CallbackQuery, state: FSMContext):
     data = await state.get_data()
     token_request = data["token_request"]
     token_request_id = token_request.id
@@ -287,7 +408,7 @@ async def switch_to_next(callback_query: CallbackQuery, state: FSMContext):
     await token_handler(callback_query.message, state)
 
 @router.callback_query(F.data == "cancel_token_request")
-async def switch_to_next(callback_query: CallbackQuery, state: FSMContext):
+async def cancel_token_req(callback_query: CallbackQuery, state: FSMContext):
     data = await state.get_data()
     token_request = data["token_request"]
     token_request_id = token_request.id
