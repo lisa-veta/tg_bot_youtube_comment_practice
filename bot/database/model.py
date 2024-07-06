@@ -21,7 +21,7 @@ class User(Base):
     role_id: Mapped[int] = mapped_column(ForeignKey("roles.id"))
     username: Mapped[str] = mapped_column(String(30), nullable=False)
     token_balance: Mapped[int] = mapped_column(default=5)
-    data_registration: Mapped[DateTime] = mapped_column(TIMESTAMP, server_default=func.now())
+    date_registration: Mapped[DateTime] = mapped_column(TIMESTAMP, server_default=func.now())
 
     def __repr__(self) -> str:
         return f"User(id={self.id!r}, role_id={self.role_id!r}, " \
