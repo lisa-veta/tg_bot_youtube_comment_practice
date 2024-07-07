@@ -48,6 +48,29 @@ class DatabaseService():
             session.add_all([user, admin, banned])
             await session.commit()
 
+    async def get_role(self, role_id: int):
+        async with AsyncSession(self.engine) as session:
+            role = await session.get(Role, role_id)
+            return role.role_name
+
+    async def ban(self, user_id: int):
+        async with AsyncSession(self.engine) as session:
+            user = await session.get(User, user_id)
+            user.role_id = 3
+            await session.commit()
+
+    async def unban(self, user_id: int):
+        async with AsyncSession(self.engine) as session:
+            user = await session.get(User, user_id)
+            user.role_id = 1
+            await session.commit()
+
+    async def make_admin(self, user_id: int):
+        async with AsyncSession(self.engine) as session:
+            user = await session.get(User, user_id)
+            user.role_id = 2
+            await session.commit()
+
     async def add_user(self, user_id: int, username: str, role: str, token_balance=5):
         async with AsyncSession(self.engine) as session:
             user = User(
@@ -56,6 +79,38 @@ class DatabaseService():
                 role_id=self.role_dict[role],
                 token_balance=token_balance)
             session.add(user)
+            await session.commit()
+
+    async def add_request(self, user_id: int, video_url: str, message_id: int):
+        async with AsyncSession(self.engine) as session:
+            # Проверяем количество реквестов у пользователя
+            requests_count = await session.execute(
+                select(func.count(Request.id)).where(Request.user_id == user_id))
+            requests_count = requests_count.scalar()
+            if requests_count >= 20:
+                # Находим самый поздний реквест
+                latest_request = await session.execute(
+                    select(Request).where(Request.user_id == user_id).order_by(Request.datetime.asc()))
+                latest_request = latest_request.scalars().first()
+                count = 19
+                # Проверяем, является ли он избранным
+                while latest_request.is_favourite:
+                    # Находим предпоследний реквест
+                    latest_request = await session.execute(
+                        select(Request).where(Request.user_id == user_id).order_by(
+                            Request.datetime.asc()).offset(count))
+                    latest_request = latest_request.scalars().first()
+                    count -= 1
+                await session.delete(latest_request)
+            video_information_str = json.dumps(video_information)
+            request = Request(
+                user_id=user_id,
+                video_url=video_url,
+                video_information=video_information_str,
+                message_id=message_id,
+                characteristics=characteristics,
+                summary=summary)
+            session.add(request)
             await session.commit()
 
     async def add_request(self, user_id: int, video_url: str, video_information: dict, message_id: int,
@@ -117,7 +172,7 @@ class DatabaseService():
 
     async def get_users(self) -> list[User]:
         async with AsyncSession(self.engine) as session:
-            users = await session.execute(select(User))
+            users = await session.execute(select(User).order_by(User.date_registration.desc()))
             users = list(users.scalars().all())
             return users
 
@@ -144,6 +199,7 @@ class DatabaseService():
         async with AsyncSession(self.engine) as session:
             requests = await session.query(Request).all()
             return requests
+
     async def get_request_by_id_20(self, user_id: int) -> list[Request]:
         async with AsyncSession(self.engine) as session:
             requests = await session.execute(select(Request).where(Request.user_id == user_id).order_by(Request.datetime.desc()).limit(20))
@@ -179,8 +235,14 @@ class DatabaseService():
 
     async def get_token_requests(self) -> list[TokenRequest]:
         async with AsyncSession(self.engine) as session:
-            token_requests = await session.query(TokenRequest).all()
-            return token_requests
+            token_requests = await session.execute(select(TokenRequest).order_by(TokenRequest.datetime))
+            token_requests = token_requests.scalars().all()
+            return list(token_requests)
+
+    async def get_username(self, user_id: int) -> str:
+        async with AsyncSession(self.engine) as session:
+            user = await session.get(User, user_id)
+            return user.username
 
     async def get_user_requests(self, user_id: int) -> pd.DataFrame:
         async with self.engine.connect() as conn:
@@ -199,7 +261,7 @@ class DatabaseService():
     async def add_tokens(self, user_id: int, amount: int):
         async with AsyncSession(self.engine) as session:
             user = await session.get(User, user_id)
-            user.token_balance = amount
+            user.token_balance += amount
             await session.commit()
 
     async def can_request(self, user_id: int) -> bool:
@@ -246,7 +308,7 @@ class DatabaseService():
             await session.commit()
 
     async def delete_token_request(self, token_request_id: int):
-        async with Session(self.engine) as session:
+        async with AsyncSession(self.engine) as session:
             token_request = await session.get(TokenRequest, token_request_id)
             await session.delete(token_request)
             await session.commit()
